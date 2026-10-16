@@ -1,0 +1,82 @@
+server:
+  port: ${SERVER_PORT:8080}
+  # Behind Cloudflare Tunnel (scripts/share-api.ps1) the public URL is https://<name>.trycloudflare.com;
+  # reading X-Forwarded-* lets Swagger "Try it out" call that https URL instead of http.
+  forward-headers-strategy: ${SERVER_FORWARD_HEADERS_STRATEGY:framework}
+
+spring:
+  jackson:
+    use-jackson2-defaults: true
+  task:
+    scheduling:
+      pool:
+        size: 3
+  application:
+    name: distributed-flight-booking
+  datasource:
+    url: ${COCKROACH_JDBC_URL:jdbc:postgresql://127.0.0.1:26257/flight_booking?sslmode=disable}
+    username: ${COCKROACH_USERNAME:root}
+    password: ${COCKROACH_PASSWORD:}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 3000
+      validation-timeout: 2000
+      maximum-pool-size: 10
+  jdbc:
+    template:
+      query-timeout: 5
+  cassandra:
+    contact-points: ${CASSANDRA_CONTACT_POINTS:127.0.0.1:9042}
+    local-datacenter: ${CASSANDRA_LOCAL_DATACENTER:datacenter1}
+    keyspace-name: ${CASSANDRA_KEYSPACE:flight_booking_events}
+    schema-action: none
+
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:true}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: method
+  paths-to-match: /api/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+
+app:
+  machine-monitor:
+    hosts:
+      - id: DESKTOP
+        name: ${HOST_MACHINE_NAME:${COMPUTERNAME:Máy bàn}}
+        ip: ${HOST_MACHINE_IP:}
+        role: Ứng dụng và dữ liệu
+        node-ids: [DESKTOP]
+        services:
+          - id: backend
+            name: Backend Java
+            url: http://127.0.0.1:${SERVER_PORT:8080}/api/system/ping
+          - id: frontend
+            name: Giao diện Next.js
+            url: http://127.0.0.1:3000
+  frontend-origin: ${FRONTEND_ORIGIN:http://localhost:3000}
+  outbox:
+    enabled: ${OUTBOX_ENABLED:true}
+    poll-ms: ${OUTBOX_POLL_MS:1000}
+    batch-size: ${OUTBOX_BATCH_SIZE:20}
+  cassandra:
+    consistency: ${CASSANDRA_CONSISTENCY:LOCAL_QUORUM}
+  monitor:
+    mode: ${DEPLOYMENT_MODE:LOCAL_SINGLE_NODE}
+    nodes:
+      - id: DESKTOP
+        host: localhost
+        cockroach-url: http://127.0.0.1:8081/health?ready=1
+        cassandra-host: 127.0.0.1
+        cassandra-port: 9042

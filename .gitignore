@@ -1,0 +1,40 @@
+# The GitHub repo holds only the runnable sources: backend-java and frontend-nextjs.
+# Everything else in this folder (docs, guides, scripts, infra, databases) stays local.
+/*
+!/.gitignore
+!/backend-java/
+!/frontend-nextjs/
+
+# No Markdown (guides, READMEs, agent notes) in the repo.
+*.md
+
+# Java
+backend-java/target/
+*.class
+
+# Next.js
+frontend-nextjs/node_modules/
+frontend-nextjs/.next/
+frontend-nextjs/out/
+*.tsbuildinfo
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+!*.example
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Archives (e.g. a zip made to send the frontend to someone)
+*.zip
