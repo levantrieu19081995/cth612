@@ -1,5 +1,5 @@
-export interface CockroachNodeShare { nodeId:number;address:string;live:boolean;leaseholderRanges:number;replicaRanges:number; }
-export interface TableShare { table:string;ranges:number;sizeMb:number;rangesByCopies:Record<string,number>; }
+export interface CockroachNodeShare { nodeId:number;address:string;live:boolean;leaseholderRanges:number;replicaRanges:number;sizeMb:number; }
+export interface TableShare { table:string;rows:number;ranges:number;sizeMb:number;rangesByCopies:Record<string,number>; }
 export interface CockroachReplication {
   status:"AVAILABLE"|"PARTIAL"|"UNAVAILABLE";targetReplicas:number|null;liveNodes:number;knownNodes:number;ranges:number;
   minCopies:number;maxCopies:number;rangesWithoutMajority:number;nodes:CockroachNodeShare[];tables:TableShare[];error:string|null;

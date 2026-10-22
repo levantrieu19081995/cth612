@@ -41,6 +41,12 @@ public class ReplicationRepository {
         return jdbc.query("SELECT range_id,lease_holder,replicas,range_size_mb FROM [SHOW RANGES FROM TABLE flight_booking."+table+" WITH DETAILS]",
             (rs,n)->new Range(table,rs.getLong("range_id"),leaseHolder(rs),ints(rs.getArray("replicas")),rs.getDouble("range_size_mb")));
     }
+    /** Exact row count of one of the fixed tables (the name is checked against the list, never user input). */
+    public long rowCount(String table) {
+        if(!TABLES.contains(table)) throw new IllegalArgumentException("Unknown table "+table);
+        Long count=jdbc.queryForObject("SELECT count(*) FROM "+table,Long.class);
+        return count==null?0:count;
+    }
     public List<Booking> latestBookings(int limit) {
         return jdbc.query("SELECT id,booking_code FROM bookings ORDER BY created_at DESC LIMIT ?",
             (rs,n)->new Booking(rs.getObject("id",UUID.class),rs.getString("booking_code")),limit);
