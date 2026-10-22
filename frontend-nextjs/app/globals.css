@@ -664,7 +664,7 @@ small {
 }
 
 .machine-tile.reachable {
-  background: linear-gradient(145deg, #153829, #16272a);
+  background: #153829;
   border-color: #27bb73;
   box-shadow: inset 0 1px 0 #30df8630, 0 0 18px #0a9f4a12;
 }
@@ -818,7 +818,7 @@ small {
 }
 
 body {
-  background: radial-gradient(ellipse at 0 0, #dff2ee 0, transparent 40%), #f3f7f8;
+  background: var(--palette-paper);
   color: var(--ui-ink);
 }
 
@@ -852,7 +852,7 @@ body {
   height: 38px;
   border-radius: 12px;
   color: #fff;
-  background: linear-gradient(140deg, #1b8473, #1b3852);
+  background: #1b8473;
   font-size: 20px;
   font-weight: 800;
   box-shadow: 0 5px 12px #146d6026;
@@ -948,7 +948,7 @@ body {
   overflow: hidden;
   border: 1px solid #c4dfdb;
   border-radius: 28px;
-  background: radial-gradient(ellipse at 0 100%, #f5dcb0 0, transparent 42%), var(--ui-gradient-hero);
+  background: var(--ui-gradient-hero);
   box-shadow: var(--ui-shadow);
 }
 
@@ -1271,7 +1271,7 @@ body {
 
 .destination-card-featured {
   border-color: #91c9b9;
-  background: linear-gradient(135deg, #eef8f2 0%, #c3e5d7 48%, #9fcfbc 100%);
+  background: #eef8f2;
 }
 
 .destination-number {
@@ -1376,7 +1376,7 @@ body {
     gap: 30px;
     padding: 42px;
   border: 1px solid #c4dfdb;
-  background: radial-gradient(ellipse at 0 100%, #f5dcb0 0, transparent 42%), var(--ui-gradient-hero);
+  background: var(--ui-gradient-hero);
   box-shadow: var(--ui-shadow);
 }
 
@@ -1427,7 +1427,7 @@ body {
     padding: clamp(25px, 7vw, 42px);
     border-radius: 22px;
   border: 1px solid #c4dfdb;
-  background: radial-gradient(ellipse at 0 100%, #f5dcb0 0, transparent 42%), var(--ui-gradient-hero);
+  background: var(--ui-gradient-hero);
   box-shadow: var(--ui-shadow);
 }
 
@@ -1475,9 +1475,7 @@ body {
   border: 1px solid #dcebe5;
   border-radius: 20px;
   background:
-    radial-gradient(circle at 92% 0, #d9f0eb 0, transparent 31%),
-    radial-gradient(circle at 78% 110%, #fff0d9 0, transparent 29%),
-    var(--ui-gradient-hero);
+  background: var(--ui-gradient-hero);
 }
 
 .booking-intro::after {
@@ -1525,7 +1523,7 @@ body {
   display: block;
   padding: 18px 24px;
   border-color: #e1e8ed;
-  background: linear-gradient(105deg, #edf6f2 0%, #cce4e8 55%, #f5dfbc 100%);
+  background: #edf6f2;
 }
 
 .booking-progress .mantine-Stepper-steps {
@@ -1567,7 +1565,7 @@ body {
 }
 
 .booking-progress .mantine-Stepper-separator {
-  background: linear-gradient(90deg, #91c8b4, #d3dfe0);
+  background: #b7d1c3;
 }
 
 .booking-search {
@@ -1578,7 +1576,7 @@ body {
 
 .booking-section-icon {
   color: #fff;
-  background: linear-gradient(145deg, #3a9c88, #397bb7);
+  background: #397b88;
   box-shadow: 0 5px 12px #397bb72c;
 }
 
@@ -1599,14 +1597,14 @@ body {
 .confirm-booking-button {
   border: 0;
   color: #fff;
-  background: linear-gradient(110deg, #167d72, #277e98 58%, #397bb7);
+  background: #167d72;
   box-shadow: 0 5px 13px #167d7228;
 }
 
 .booking-search-button:hover:not(:disabled),
 .confirm-booking-button:hover:not(:disabled) {
   color: #fff;
-  background: linear-gradient(110deg, #116b62, #216c84 58%, #306ba0);
+  background: #116b62;
   box-shadow: 0 7px 17px #167d7233;
 }
 
@@ -1621,14 +1619,14 @@ body {
 .flight-card {
   overflow: hidden;
   border-color: #dfe9e7;
-  background: linear-gradient(115deg, #fff, #d3e9e1);
+  background: #f7fbf8;
 }
 
 .flight-card::before {
   position: absolute;
   inset: 0 auto 0 0;
   width: 4px;
-  background: linear-gradient(180deg, #37a58b, #4d91bc 58%, #e6ad56);
+  background: #37a58b;
   content: "";
   opacity: .7;
   transition: opacity .18s ease, width .18s ease;
@@ -1642,7 +1640,7 @@ body {
 
 .flight-card.selected {
   border-color: #66a995;
-  background: linear-gradient(115deg, #c4e5d6, #c9deec);
+  background: #c4e5d6;
   box-shadow: inset 0 0 0 1px #66a995, 0 8px 20px #24856e18;
 }
 
@@ -1677,7 +1675,7 @@ body {
 .flight-route-line span {
   color: #fff;
   border-radius: 50%;
-  background: linear-gradient(140deg, #319b87, #4388b2);
+  background: #319b87;
   box-shadow: 0 3px 8px #397bb72b;
 }
 
@@ -1690,7 +1688,7 @@ body {
   width: fit-content;
   padding: 5px 9px;
   border-radius: 99px;
-  background: linear-gradient(100deg, #21846e, #398a9c);
+  background: #21846e;
 }
 
 .booking-workspace {
@@ -1702,13 +1700,13 @@ body {
 .prompt-number,
 .summary-plane {
   color: #fff;
-  background: linear-gradient(145deg, #3da58d, #4387b4);
+  background: #3da58d;
   box-shadow: 0 4px 10px #397bb72b;
 }
 
 .selected-flight-summary {
   border: 1px solid #dcece4;
-  background: linear-gradient(105deg, #c7e6d7, #c9e0ee);
+  background: #c7e6d7;
 }
 
 .selected-flight-summary strong {
@@ -1731,20 +1729,19 @@ body {
 
 .seat-legend-dot.chosen {
   border-color: #397bb7;
-  background: linear-gradient(140deg, #168274, #397bb7);
+  background: #168274;
 }
 
 .seat-map {
   border-color: #dce9e7;
   background:
-    radial-gradient(ellipse at 50% 0, #e5f1fa 0, transparent 52%),
-    linear-gradient(145deg, #deeee6, #ccdfeb);
+  background: #deeee6;
 }
 
 .seat {
   border-color: #8fc1a6;
   color: #287157;
-  background: linear-gradient(145deg, #f1faf5, #bfe2cf);
+  background: #e3f1e8;
   box-shadow: 0 2px 5px #286d4e12;
 }
 
@@ -1758,14 +1755,14 @@ body {
 .seat:disabled {
   border-color: #e8d9d7;
   color: #927d79;
-  background: linear-gradient(145deg, #f5eeed, #eee8e8);
+  background: #f1eded;
   box-shadow: none;
 }
 
 .seat.selected {
   border-color: #397bb7;
   color: #fff;
-  background: linear-gradient(145deg, #168274, #397bb7);
+  background: #168274;
   box-shadow: 0 5px 12px #397bb744;
 }
 
@@ -1779,7 +1776,7 @@ body {
   border: 1px solid #e7e2f1;
   border-radius: 11px;
   color: #594d75;
-  background: linear-gradient(100deg, #fff2dc, #ecd0a1);
+  background: #fff2dc;
 }
 
 .booking-total strong {
@@ -1789,13 +1786,11 @@ body {
 .booking-success {
   border: 1px solid #d7ebe1;
   border-radius: 14px;
-  background:
-    radial-gradient(circle at 50% 0, #e0f5eb, transparent 50%),
-    linear-gradient(150deg, #f4fbf7, #bcdfcd);
+  background: #e8f4ec;
 }
 
 .success-mark {
-  background: linear-gradient(145deg, #2c9b70, #3c91a1);
+  background: #2c9b70;
   box-shadow: 0 7px 18px #328e7138;
 }
 
@@ -1804,12 +1799,12 @@ body {
 }
 
 .booking-success a {
-  background: linear-gradient(100deg, #177c70, #397bb7);
+  background: #177c70;
   box-shadow: 0 5px 13px #397bb72b;
 }
 
 .booking-success a:hover {
-  background: linear-gradient(100deg, #12695f, #306aa0);
+  background: #12695f;
 }
 
 @media (max-width: 560px) {
@@ -1885,7 +1880,7 @@ body {
 .booking-progress .mantine-Stepper-step[data-progress] .mantine-Stepper-stepIcon {
   border-color: var(--mantine-color-blue-6);
   color: #fff;
-  background: linear-gradient(145deg, var(--mantine-color-teal-6), var(--mantine-color-blue-6));
+  background: var(--mantine-color-teal-6);
   box-shadow: 0 0 0 4px #328fda20;
 }
 
@@ -1896,7 +1891,7 @@ body {
 }
 
 .booking-progress .mantine-Stepper-separator {
-  background: linear-gradient(90deg, #65b89a, #70b3df);
+  background: #8bbcac;
 }
 
 .booking-search-card {
@@ -1944,18 +1939,18 @@ body {
 }
 
 .booking-flight-panel {
-  background: linear-gradient(155deg, #c4dceb 0, #e5eff7 140px, #fff 360px);
+  background: #fff;
 }
 
 .booking-seat-panel {
-  background: linear-gradient(155deg, #bcdfd2 0, #e1f1ea 140px, #fff 360px);
+  background: #fff;
 }
 
 .booking-flight-card {
   position: relative;
   overflow: hidden;
   border-color: #dce8e8 !important;
-  background: linear-gradient(110deg, #fff 0%, #e8f2f6 55%, #d3e5ed 100%) !important;
+  background: #f5f9fa !important;
   box-shadow: 0 4px 12px #255d6b0c;
 }
 
@@ -2082,7 +2077,7 @@ body {
   .brand-mark {
     width: 34px;
     height: 34px;
-  background: linear-gradient(140deg, #1b8473, #1b3852);
+  background: #1b8473;
   box-shadow: 0 5px 12px #146d6026;
 }
 
@@ -2106,7 +2101,7 @@ body {
   .home-hero {
     padding: 24px 19px;
   border: 1px solid #c4dfdb;
-  background: radial-gradient(ellipse at 0 100%, #f5dcb0 0, transparent 42%), var(--ui-gradient-hero);
+  background: var(--ui-gradient-hero);
   box-shadow: var(--ui-shadow);
 }
 
@@ -3524,4 +3519,192 @@ small {
 
 :where(a, button, input, select, summary):focus-visible {
   outline-color: #b86b50;
+}
+
+.booking-page-shell .booking-flight-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #d4dcd2 !important;
+  border-radius: 10px !important;
+  background: #fbfaf6 !important;
+  box-shadow: 0 2px 8px #293b350d;
+}
+
+.booking-page-shell .booking-flight-card::before {
+  width: 4px;
+  background: #426457;
+}
+
+.booking-page-shell .booking-flight-card-selected {
+  border-color: #426457 !important;
+  background: #f1f3ed !important;
+  box-shadow: inset 0 0 0 1px #426457;
+}
+
+.booking-page-shell .booking-ticket-heading {
+  padding-bottom: 10px;
+  border-bottom: 1px solid #d4dcd2;
+}
+
+.booking-page-shell .booking-ticket-route {
+  min-height: 104px;
+}
+
+.booking-page-shell .booking-ticket-time {
+  color: #293b35;
+  font-size: clamp(26px, 3vw, 34px);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.04em;
+}
+
+.booking-page-shell .booking-ticket-code {
+  color: #426457;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+
+.booking-page-shell .booking-ticket-flight-line {
+  width: min(100%, 170px);
+  color: #426457;
+}
+
+.booking-page-shell .booking-ticket-flight-line > .mantine-Box-root {
+  height: 1px;
+  flex: 1;
+  border-top: 1px dashed #a9b8aa;
+}
+
+.booking-page-shell .booking-ticket-divider {
+  position: relative;
+  overflow: visible;
+  margin: 4px -24px;
+  border-top: 1px dashed #a9b8aa;
+}
+
+.booking-page-shell .booking-ticket-divider::before,
+.booking-page-shell .booking-ticket-divider::after {
+  position: absolute;
+  top: -8px;
+  width: 15px;
+  height: 15px;
+  border: 1px solid #d4dcd2;
+  border-radius: 50%;
+  background: #f5f2e9;
+  content: "";
+}
+
+.booking-page-shell .booking-ticket-divider::before {
+  left: -9px;
+}
+
+.booking-page-shell .booking-ticket-divider::after {
+  right: -9px;
+}
+
+.booking-page-shell .booking-ticket-footer {
+  color: #66736c;
+}
+
+.booking-page-shell .booking-ticket-price {
+  color: #426457 !important;
+  font-size: clamp(20px, 2.5vw, 26px) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.booking-page-shell .booking-confirmed-ticket {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #d4dcd2;
+  border-radius: 10px;
+  background: #fbfaf6;
+  box-shadow: 0 3px 10px #293b3512;
+}
+
+.booking-page-shell .booking-confirmed-ticket::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: #426457;
+  content: "";
+}
+
+.booking-page-shell .booking-confirmed-ticket .mantine-Divider-root {
+  border-top: 1px dashed #a9b8aa;
+}
+
+@media (max-width: 640px) {
+  .booking-page-shell .booking-ticket-route {
+    gap: 8px;
+  }
+
+  .booking-page-shell .booking-ticket-track {
+    min-width: 62px;
+  }
+
+  .booking-page-shell .booking-ticket-time {
+    font-size: 25px;
+  }
+}
+
+.booking-page-shell .booking-price-details {
+  border-top: 1px solid #d4dcd2;
+}
+
+.booking-page-shell .booking-price-details > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 10px;
+  color: #426457;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 650;
+  list-style: none;
+}
+
+.booking-page-shell .booking-price-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.booking-page-shell .booking-price-details-icon {
+  position: relative;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  border: 1px solid #a9b8aa;
+  border-radius: 50%;
+}
+
+.booking-page-shell .booking-price-details-icon::before,
+.booking-page-shell .booking-price-details-icon::after {
+  position: absolute;
+  top: 8px;
+  left: 4px;
+  width: 8px;
+  height: 1px;
+  background: currentColor;
+  content: "";
+}
+
+.booking-page-shell .booking-price-details-icon::after {
+  transform: rotate(90deg);
+  transition: transform .15s ease;
+}
+
+.booking-page-shell .booking-price-details[open] .booking-price-details-icon::after {
+  transform: rotate(0);
+}
+
+.booking-page-shell .booking-price-breakdown {
+  padding-top: 10px;
+}
+
+.booking-page-shell .booking-price-breakdown > .mantine-Group-root {
+  align-items: flex-start;
+}
+
+.booking-page-shell .booking-price-breakdown .mantine-Text-root:first-child {
+  color: #66736c;
 }

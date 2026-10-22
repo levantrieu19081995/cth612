@@ -57,7 +57,8 @@ import { dateFormater } from "@/components/utils/date-format";
 const money = (value: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
 const time = (value: string) => new Date(value).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour12: false });
 
-const flightDuration = (departure: string, arrival: string) => {
+const flightDuration = (departure: string, arrival: string) =>
+{
   const totalMinutes = Math.max(0, Math.round((new Date(arrival).getTime() - new Date(departure).getTime()) / 60000));
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
@@ -80,7 +81,8 @@ const mealLabels: Record<string, string> = {
   VEGETARIAN: "Suất chay",
   SANDWICH: "Sandwich",
 };
-const seatPrice = (seatNo: string) => {
+const seatPrice = (seatNo: string) =>
+{
   if (seatNo.startsWith("01")) return 100000;
   if (seatNo.endsWith("A") || seatNo.endsWith("F")) return 50000;
   return 0;
@@ -177,12 +179,25 @@ export default function BookingPage()
   async function chooseFlight(item: Flight)
   {
     const request = ++seatRequest.current;
-    setFlight(item); setSeat(null); setSeats([]); setBooking(null); setBaggageKg(null); setMealCode(null); setError(""); setLoadingSeats(true);
+    setFlight(item);
+    setSeat(null);
+    setSeats([]);
+    setBooking(null);
+    setBaggageKg(null);
+    setMealCode(null);
+    setError("");
+    setLoadingSeats(true);
     try {
       const data = await apiGet<Seat[]>(`/api/flights/${item.flightId}/seats`);
       if (request === seatRequest.current) setSeats(data);
-    } catch (err) { if (request === seatRequest.current) setError(errorText(err)); }
-    finally { if (request === seatRequest.current) setLoadingSeats(false); }
+    } catch (err) {
+      if (request === seatRequest.current)
+        setError(errorText(err));
+    }
+    finally {
+      if (request === seatRequest.current)
+        setLoadingSeats(false);
+    }
   }
 
   async function book(event: FormEvent<HTMLFormElement>)
@@ -317,7 +332,7 @@ export default function BookingPage()
                 </Box>
               </Group>
 
-                  <Box component="form" onSubmit={handleSearchFlights}>
+              <Box component="form" onSubmit={handleSearchFlights}>
                 <Stack gap="md">
                   <SegmentedControl
                     aria-label="Tìm chuyến theo ngày hoặc tháng"
@@ -326,7 +341,8 @@ export default function BookingPage()
                       { label: "Theo tháng", value: "month" },
                     ]}
                     value={searchPeriod}
-                    onChange={(value) => {
+                    onChange={(value) =>
+                    {
                       if (value !== "day" && value !== "month") return;
                       setSearchPeriod(value);
                       form.setFieldValue(value === "day" ? "month" : "date", null);
@@ -335,79 +351,79 @@ export default function BookingPage()
                   />
 
                   <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md" verticalSpacing="sm">
-                  <Select
-                    label="Nơi đi"
-                    placeholder="Tất cả điểm đi"
-                    data={airportOptions}
-                    {...form.getInputProps("origin")}
+                    <Select
+                      label="Nơi đi"
+                      placeholder="Tất cả điểm đi"
+                      data={airportOptions}
+                      {...form.getInputProps("origin")}
 
-                    disabled={submitting}
-                    clearable
-                    searchable
-                    size="md"
-                    radius="md"
-                    comboboxProps={{ withinPortal: true, zIndex: 500 }}
-                  />
-
-                  <Select
-                    label="Nơi đến"
-                    placeholder="Tất cả điểm đến"
-                    data={airportOptions?.filter((opt) => opt.value !== form.values.origin)}
-                    {...form.getInputProps("destination")}
-                    disabled={submitting}
-                    clearable
-                    searchable
-                    size="md"
-                    radius="md"
-                    comboboxProps={{ withinPortal: true, zIndex: 500 }}
-                  />
-
-                  {searchPeriod === "day" ? (
-                    <DateInput
-                      placeholder="Chọn ngày bay"
-                      label="Ngày bay"
-                      {...form.getInputProps("date")}
                       disabled={submitting}
-                      leftSection={<IconCalendar size={18} />}
+                      clearable
+                      searchable
                       size="md"
                       radius="md"
-                      minDate={new Date()}
-                      valueFormat="DD/MM/YYYY"
-                      locale="vi"
+                      comboboxProps={{ withinPortal: true, zIndex: 500 }}
                     />
-                  ) : (
-                    <MonthPickerInput
-                      placeholder="Chọn tháng bay"
-                      label="Tháng bay"
-                      {...form.getInputProps("month")}
+
+                    <Select
+                      label="Nơi đến"
+                      placeholder="Tất cả điểm đến"
+                      data={airportOptions?.filter((opt) => opt.value !== form.values.origin)}
+                      {...form.getInputProps("destination")}
                       disabled={submitting}
-                      leftSection={<IconCalendar size={18} />}
+                      clearable
+                      searchable
                       size="md"
                       radius="md"
-                      minDate={new Date()}
-                      valueFormat="MMMM YYYY"
-                      locale="vi"
+                      comboboxProps={{ withinPortal: true, zIndex: 500 }}
                     />
-                  )}
 
-                  <Button
-                    className="booking-search-submit"
-                    type="submit"
-                    size="md"
-                    radius="md"
-                    mt={26}
-                    loading={searching}
-                    disabled={
-                      submitting ||
-                      searching ||
-                      (searchPeriod === "day" ? !form.values.date : !form.values.month)
-                    }
-                    leftSection={<IconSearch size={19} />}
-                    rightSection={<IconArrowRight size={17} />}
-                    fullWidth
-                  >
-                    Tìm chuyến bay
-                  </Button>
+                    {searchPeriod === "day" ? (
+                      <DateInput
+                        placeholder="Chọn ngày bay"
+                        label="Ngày bay"
+                        {...form.getInputProps("date")}
+                        disabled={submitting}
+                        leftSection={<IconCalendar size={18} />}
+                        size="md"
+                        radius="md"
+                        minDate={new Date()}
+                        valueFormat="DD/MM/YYYY"
+                        locale="vi"
+                      />
+                    ) : (
+                      <MonthPickerInput
+                        placeholder="Chọn tháng bay"
+                        label="Tháng bay"
+                        {...form.getInputProps("month")}
+                        disabled={submitting}
+                        leftSection={<IconCalendar size={18} />}
+                        size="md"
+                        radius="md"
+                        minDate={new Date()}
+                        valueFormat="MMMM YYYY"
+                        locale="vi"
+                      />
+                    )}
+
+                    <Button
+                      className="booking-search-submit"
+                      type="submit"
+                      size="md"
+                      radius="md"
+                      mt={26}
+                      loading={searching}
+                      disabled={
+                        submitting ||
+                        searching ||
+                        (searchPeriod === "day" ? !form.values.date : !form.values.month)
+                      }
+                      leftSection={<IconSearch size={19} />}
+                      rightSection={<IconArrowRight size={17} />}
+                      fullWidth
+                    >
+                      Tìm chuyến bay
+                    </Button>
                   </SimpleGrid>
                 </Stack>
               </Box>
@@ -799,11 +815,6 @@ export default function BookingPage()
 
                             <Paper className="booking-total-card" bg="gray.0" radius="md" p="md" withBorder>
                               <Stack gap="xs">
-                                <Group justify="space-between"><Text size="sm">Giá vé cơ bản · gồm ghế tiêu chuẩn</Text><Text size="sm" fw={600}>{money(flight.price)}</Text></Group>
-                                {selectedSeatFee > 0 && <Group justify="space-between"><Text size="sm">Phụ thu vị trí ghế {seat.seatNo}</Text><Text size="sm" fw={600}>{money(selectedSeatFee)}</Text></Group>}
-                                {selectedBaggageFee > 0 && <Group justify="space-between"><Text size="sm">Hành lý ký gửi · {baggageKg} kg</Text><Text size="sm" fw={600}>{money(selectedBaggageFee)}</Text></Group>}
-                                {selectedMealFee > 0 && <Group justify="space-between"><Text size="sm">Suất ăn · {mealCode ? mealLabels[mealCode] : ""}</Text><Text size="sm" fw={600}>{money(selectedMealFee)}</Text></Group>}
-                                <Divider />
                                 <Group justify="space-between" align="center" wrap="wrap" gap="xs">
                                   <Box>
                                     <Text size="sm" fw={700}>Tổng thanh toán mô phỏng</Text>
@@ -811,6 +822,34 @@ export default function BookingPage()
                                   </Box>
                                   <Text size="xl" fw={850} c="blue.7">{money(bookingTotal)}</Text>
                                 </Group>
+                                <details className="booking-price-details">
+                                  <summary>
+                                    <span>Chi tiết giá vé</span>
+                                    <span className="booking-price-details-icon" aria-hidden="true" />
+                                  </summary>
+                                  <Stack className="booking-price-breakdown" gap="xs">
+                                    <Group justify="space-between" gap="sm" wrap="nowrap">
+                                      <Text size="sm">Giá vé cơ bản · gồm ghế tiêu chuẩn</Text>
+                                      <Text size="sm" fw={600} ta="right">{money(flight.price)}</Text>
+                                    </Group>
+                                    <Group justify="space-between" gap="sm" wrap="nowrap">
+                                      <Text size="sm">{selectedSeatFee > 0 && seat ? `Phụ thu ghế ${seat.seatNo}` : "Ghế tiêu chuẩn"}</Text>
+                                      <Text size="sm" fw={600} ta="right">{money(selectedSeatFee)}</Text>
+                                    </Group>
+                                    <Group justify="space-between" gap="sm" wrap="nowrap">
+                                      <Text size="sm">{baggageKg ? `Hành lý ký gửi · ${baggageKg} kg` : "Hành lý ký gửi · Không mua thêm"}</Text>
+                                      <Text size="sm" fw={600} ta="right">{money(selectedBaggageFee)}</Text>
+                                    </Group>
+                                    <Group justify="space-between" gap="sm" wrap="nowrap">
+                                      <Text size="sm">{mealCode ? `Suất ăn · ${mealLabels[mealCode] ?? mealCode}` : "Suất ăn · Không chọn"}</Text>
+                                      <Text size="sm" fw={600} ta="right">{money(selectedMealFee)}</Text>
+                                    </Group>
+                                    <Group justify="space-between" gap="sm" wrap="nowrap">
+                                      <Text size="sm">Phí phục vụ · Không thu riêng</Text>
+                                      <Text size="sm" fw={600} ta="right">{money(0)}</Text>
+                                    </Group>
+                                  </Stack>
+                                </details>
                               </Stack>
                             </Paper>
                             <Button
