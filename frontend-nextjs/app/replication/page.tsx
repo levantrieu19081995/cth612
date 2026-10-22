@@ -1,12 +1,19 @@
 "use client";
 import {usePolling} from "../../lib/usePolling";
 import type {ReplicationSnapshot} from "../../types/replication";
+import type {AnalyticsSummary} from "../../types/monitoring";
+
+const number=new Intl.NumberFormat("vi-VN");
 
 // Every number on this page comes from /api/monitoring/replication, which reads CockroachDB ranges and
 // Cassandra token ownership; explanatory sentences only describe those measured values.
 export default function ReplicationPage() {
   const {data,error,loading,refresh}=usePolling<ReplicationSnapshot>("/api/monitoring/replication",10000);
+  // Event counts live in Cassandra and the outbox; the analytics summary already reads both.
+  const {data:summary}=usePolling<AnalyticsSummary>("/api/analytics/summary",10000);
   const cr=data?.cockroach,cs=data?.cassandra;
+  const totalRows=cr?.tables.reduce((sum,t)=>sum+t.rows,0)??0;
+  const rowsOf=(table:string)=>cr?.tables.find(t=>t.table===table)?.rows??0;
   const nodeName=(id:number)=>cr?.nodes.find(n=>n.nodeId===id)?.address.replace(/:\d+$/,"")??`node ${id} (không còn trong cụm)`;
   const copiesText=cr?(cr.minCopies===cr.maxCopies?`${cr.maxCopies}`:`${cr.minCopies}–${cr.maxCopies}`):"—";
   return <section><p className="eyebrow">PHÂN TÁN DỮ LIỆU</p><h1>Dữ liệu nằm ở đâu, có bao nhiêu bản</h1>
@@ -14,6 +21,18 @@ export default function ReplicationPage() {
     {error&&<p className="alert error" role="alert">Mất kết nối backend: {error}. Dữ liệu bên dưới là lần đọc trước.</p>}
     {loading&&!data&&<p role="status">Đang đọc vị trí dữ liệu…</p>}
     {data&&cr&&cs&&<>
+      {cr.status!=="UNAVAILABLE"&&<>
+        <h2>Lượng dữ liệu hiện có</h2>
+        <div className="grid monitor-summary">
+          <div className="card"><h3>Tổng số dòng CockroachDB</h3><p className="stat">{number.format(totalRows)}</p>
+            <small>{cr.tables.map(t=>`${t.table}: ${number.format(t.rows)}`).join(" · ")}</small></div>
+          <div className="card"><h3>Vé đã đặt</h3><p className="stat">{number.format(rowsOf("bookings"))}</p>
+            <small>{number.format(rowsOf("payments"))} thanh toán · {number.format(rowsOf("flight_seats"))} ghế</small></div>
+          <div className="card"><h3>Sự kiện đã sang Cassandra</h3><p className="stat">{summary?number.format(summary.outbox.published):"—"}</p>
+            <small>{summary?`${number.format(summary.outbox.pending)} đang chờ · mỗi vé 4 sự kiện, ghi vào 2 bảng`:"Đang đọc…"}</small></div>
+        </div>
+        <p className="muted">Số dòng đếm trực tiếp bằng <code>SELECT count(*)</code>. Cassandra lưu mỗi sự kiện hai lần (theo vé và theo ngày), nên số dòng thực trong Cassandra gấp đôi số sự kiện.</p>
+      </>}
       <div className="grid monitor-summary">
         <div className="card"><h2>CockroachDB</h2>
           {cr.status==="UNAVAILABLE"?<p className="alert error">Không đọc được thông tin range ({cr.error}).</p>:<>
@@ -41,13 +60,14 @@ export default function ReplicationPage() {
       {cr.status!=="UNAVAILABLE"&&<>
         <h2>CockroachDB — mỗi node giữ gì</h2>
         <p className="muted">Leaseholder: node đang phục vụ đọc/ghi cho range đó. Bản sao: node giữ một bản dữ liệu của range.</p>
-        <div className="table-wrap"><table><thead><tr><th>Node</th><th>Địa chỉ</th><th>Trạng thái</th><th>Range đang phục vụ</th><th>Range giữ bản sao</th></tr></thead>
+        <div className="table-wrap"><table><thead><tr><th>Node</th><th>Địa chỉ</th><th>Trạng thái</th><th>Range đang phục vụ</th><th>Range giữ bản sao</th><th>Dung lượng bản sao đang giữ</th></tr></thead>
           <tbody>{cr.nodes.map(n=><tr key={n.nodeId}><td>{n.nodeId}</td><td>{n.address}</td>
             <td><span className={"badge "+(n.live?"online":"offline")}>{n.live?"Đang sống":"Mất kết nối"}</span></td>
-            <td>{n.leaseholderRanges}</td><td>{n.replicaRanges}/{cr.ranges}</td></tr>)}</tbody></table></div>
+            <td>{n.leaseholderRanges}</td><td>{n.replicaRanges}/{cr.ranges}</td><td>{n.sizeMb.toFixed(2)} MB</td></tr>)}</tbody></table></div>
+        <p className="muted">Dung lượng = kích thước logic của các range mà node giữ một bản; mỗi range tính một lần. Tổng các node lớn hơn dữ liệu gốc khi có nhiều bản sao.</p>
         <h2>CockroachDB — theo bảng</h2>
-        <div className="table-wrap"><table><thead><tr><th>Bảng</th><th>Số range</th><th>Dung lượng</th><th>Số bản sao</th></tr></thead>
-          <tbody>{cr.tables.map(t=><tr key={t.table}><td>{t.table}</td><td>{t.ranges}</td><td>{t.sizeMb.toFixed(3)} MB</td>
+        <div className="table-wrap"><table><thead><tr><th>Bảng</th><th>Số dòng</th><th>Số range</th><th>Dung lượng</th><th>Số bản sao</th></tr></thead>
+          <tbody>{cr.tables.map(t=><tr key={t.table}><td>{t.table}</td><td>{number.format(t.rows)}</td><td>{t.ranges}</td><td>{t.sizeMb.toFixed(3)} MB</td>
             <td>{Object.entries(t.rangesByCopies).map(([copies,count])=>`${count} range × ${copies} bản`).join(", ")||"—"}</td></tr>)}</tbody></table></div>
         <p className="muted">Bảng nhỏ (vài MB) nằm gọn trong một range; CockroachDB chỉ tự chia khi range vượt 512 MB. Dùng <code>split-ranges.mjs</code> trên PC1 để chia và rải lên các node.</p>
       </>}

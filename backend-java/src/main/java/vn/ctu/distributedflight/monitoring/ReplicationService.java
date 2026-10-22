@@ -12,8 +12,9 @@ import vn.ctu.distributedflight.repository.ReplicationRepository.Range;
  */
 @Service
 public class ReplicationService {
-    public record NodeShare(int nodeId,String address,boolean live,int leaseholderRanges,int replicaRanges) {}
-    public record TableShare(String table,int ranges,double sizeMb,Map<Integer,Integer> rangesByCopies) {}
+    /** sizeMb = logical size of the ranges this node holds a copy of (each range counted once). */
+    public record NodeShare(int nodeId,String address,boolean live,int leaseholderRanges,int replicaRanges,double sizeMb) {}
+    public record TableShare(String table,long rows,int ranges,double sizeMb,Map<Integer,Integer> rangesByCopies) {}
     public record Cockroach(String status,Integer targetReplicas,int liveNodes,int knownNodes,int ranges,int minCopies,int maxCopies,
             int rangesWithoutMajority,List<NodeShare> nodes,List<TableShare> tables,String error) {}
     public record Cassandra(String status,String keyspace,String strategy,Integer replicationFactor,String consistency,
@@ -51,12 +52,13 @@ public class ReplicationService {
             nodes.stream().filter(ReplicationRepository.CockroachNode::live).forEach(node->live.add(node.nodeId()));
             List<NodeShare> shares=nodes.stream().map(node->new NodeShare(node.nodeId(),node.address(),node.live(),
                 (int)distinct.values().stream().filter(r->Objects.equals(r.leaseHolder(),node.nodeId())).count(),
-                (int)distinct.values().stream().filter(r->r.replicas().contains(node.nodeId())).count())).toList();
+                (int)distinct.values().stream().filter(r->r.replicas().contains(node.nodeId())).count(),
+                distinct.values().stream().filter(r->r.replicas().contains(node.nodeId())).mapToDouble(Range::sizeMb).sum())).toList();
             List<TableShare> tables=ReplicationRepository.TABLES.stream().map(table->{
                 var ranges=all.stream().filter(r->r.table().equals(table)).toList();
                 Map<Integer,Integer> byCopies=new TreeMap<>();
                 ranges.forEach(r->byCopies.merge(r.replicas().size(),1,Integer::sum));
-                return new TableShare(table,ranges.size(),ranges.stream().mapToDouble(Range::sizeMb).sum(),byCopies);
+                return new TableShare(table,repository.rowCount(table),ranges.size(),ranges.stream().mapToDouble(Range::sizeMb).sum(),byCopies);
             }).toList();
             int without=(int)distinct.values().stream().filter(r->!hasMajority(r.replicas(),live)).count();
             IntSummaryStatistics copies=distinct.values().stream().mapToInt(r->r.replicas().size()).summaryStatistics();
