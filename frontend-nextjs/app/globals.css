@@ -1474,7 +1474,6 @@ body {
   padding: 30px 34px;
   border: 1px solid #dcebe5;
   border-radius: 20px;
-  background:
   background: var(--ui-gradient-hero);
 }
 
@@ -1734,7 +1733,6 @@ body {
 
 .seat-map {
   border-color: #dce9e7;
-  background:
   background: #deeee6;
 }
 
@@ -1998,6 +1996,23 @@ body {
 
 .booking-seat-button {
   transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+}
+
+.booking-seat-button .mantine-Button-inner {
+  flex-direction: column;
+  gap: 2px;
+  line-height: 1;
+}
+
+.booking-seat-number {
+  line-height: 1;
+}
+
+.booking-seat-position {
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .booking-seat-button-available {

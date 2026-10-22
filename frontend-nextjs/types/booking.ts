@@ -9,9 +9,10 @@ export interface Seat {
 }
 export interface Booking {
   bookingId: string; bookingCode: string; flightId: string; flightNo: string;
-  seatId: string; seatNo: string; passengerName: string; passengerEmail: string;
+  seatId: string | null; seatNo: string | null; passengerName: string; passengerEmail: string;
   status: string; createdAt: string; amount: number; currency: string;
   baggageKg: number | null; mealCode: string | null; seatFee: number;
+  passengerType: "ADULT" | "CHILD" | "INFANT";
 }
 export interface CreateBooking {
   requestId: string;

@@ -31,10 +31,23 @@ CREATE TABLE IF NOT EXISTS bookings (
     id UUID PRIMARY KEY,
     booking_code STRING NOT NULL UNIQUE,
     flight_id UUID NOT NULL REFERENCES flights(id),
-    seat_id UUID NOT NULL REFERENCES flight_seats(id),
+    seat_id UUID NULL REFERENCES flight_seats(id),
     passenger_name STRING NOT NULL,
     passenger_email STRING NOT NULL,
     status STRING NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    passenger_type STRING NOT NULL DEFAULT 'ADULT',
+    baggage_kg INT4 NULL,
+    meal_code STRING NULL,
+    seat_fee DECIMAL(18,2) NOT NULL DEFAULT 0,
+    group_request_id UUID NULL,
+    group_index INT4 NULL
+);
+
+CREATE TABLE IF NOT EXISTS booking_groups (
+    request_id UUID PRIMARY KEY,
+    flight_id UUID NOT NULL REFERENCES flights(id),
+    request_fingerprint STRING NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -71,6 +84,15 @@ ON outbox_events (published_at, occurred_at);
 -- Additive migrations preserve existing local/demo bookings.
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS request_id UUID NULL;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS request_fingerprint STRING NULL;
+ALTER TABLE bookings ALTER COLUMN seat_id DROP NOT NULL;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS passenger_type STRING NOT NULL DEFAULT 'ADULT';
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS baggage_kg INT4 NULL;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS meal_code STRING NULL;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS seat_fee DECIMAL(18,2) NOT NULL DEFAULT 0;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS group_request_id UUID NULL;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS group_index INT4 NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_group_booking_order ON bookings(group_request_id,group_index)
+WHERE group_request_id IS NOT NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_booking_request_id ON bookings(request_id) WHERE request_id IS NOT NULL;
 ALTER TABLE outbox_events ADD COLUMN IF NOT EXISTS lease_owner UUID NULL;
 ALTER TABLE outbox_events ADD COLUMN IF NOT EXISTS lease_until TIMESTAMPTZ NULL;

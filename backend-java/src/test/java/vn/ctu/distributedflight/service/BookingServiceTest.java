@@ -62,4 +62,55 @@ class BookingServiceTest {
         assertEquals("SEAT_NOT_FOUND",assertThrows(ApiException.class,()->service.create(request)).code());
         verify(repository,never()).reserve(any(),any());
     }
+    @Test void groupPricesPassengersIndividuallyAndAllowsSeatlessInfant() {
+        UUID childSeat=UUID.randomUUID();
+        when(repository.lockSeat(flight,childSeat)).thenReturn(Optional.of(new Seat(childSeat,"12A","ECONOMY","AVAILABLE")));
+        when(repository.lockSeat(flight,seat)).thenReturn(Optional.of(new Seat(seat,"01A","ECONOMY","AVAILABLE")));
+        when(repository.reserve(flight,childSeat)).thenReturn(true);
+        when(repository.reserve(flight,seat)).thenReturn(true);
+        GroupBookingRequest group=new GroupBookingRequest(flight,UUID.randomUUID(),List.of(
+            new GroupPassenger("Adult","adult@example.com",PassengerType.ADULT,seat,15,"CHICKEN"),
+            new GroupPassenger("Child","child@example.com",PassengerType.CHILD,childSeat,null,"VEGETARIAN"),
+            new GroupPassenger("Infant","infant@example.com",PassengerType.INFANT,null,null,null)));
+
+        List<Booking> result=service.createGroup(group);
+
+        assertEquals(3,result.size());
+        org.mockito.ArgumentCaptor<BigDecimal> amounts=org.mockito.ArgumentCaptor.forClass(BigDecimal.class);
+        verify(repository,times(3)).insertPayment(any(),amounts.capture(),eq("VND"),any());
+        assertEquals(List.of(new BigDecimal("1840000"),new BigDecimal("1250000"),BigDecimal.ZERO),
+            amounts.getAllValues().stream().map(BigDecimal::stripTrailingZeros).toList());
+        org.mockito.ArgumentCaptor<UUID> seats=org.mockito.ArgumentCaptor.forClass(UUID.class);
+        verify(repository,times(3)).insertGroupBooking(any(),anyString(),eq(flight),seats.capture(),anyString(),anyString(),
+            any(),any(),any(),any(),any(),anyInt(),any());
+        assertEquals(Arrays.asList(seat,childSeat,null),seats.getAllValues());
+        verify(repository,times(12)).insertEvent(any(),any(),anyString(),anyString(),any());
+    }
+    @Test void groupRequiresSeatForChildAndNoSeatForInfant() {
+        GroupBookingRequest noChildSeat=new GroupBookingRequest(flight,UUID.randomUUID(),List.of(
+            new GroupPassenger("Child","child@example.com",PassengerType.CHILD,null,null,null)));
+        assertEquals("INVALID_PASSENGER",assertThrows(ApiException.class,()->service.createGroup(noChildSeat)).code());
+        GroupBookingRequest infantWithSeat=new GroupBookingRequest(flight,UUID.randomUUID(),List.of(
+            new GroupPassenger("Adult","adult@example.com",PassengerType.ADULT,seat,null,null),
+            new GroupPassenger("Infant","infant@example.com",PassengerType.INFANT,seat,null,null)));
+        assertEquals("INVALID_PASSENGER",assertThrows(ApiException.class,()->service.createGroup(infantWithSeat)).code());
+        GroupBookingRequest infantWithoutAdult=new GroupBookingRequest(flight,UUID.randomUUID(),List.of(
+            new GroupPassenger("Infant","infant@example.com",PassengerType.INFANT,null,null,null)));
+        assertEquals("INVALID_PASSENGER",assertThrows(ApiException.class,()->service.createGroup(infantWithoutAdult)).code());
+        verifyNoInteractions(manager);
+    }
+    @Test void groupRequestIdCannotBeReusedWithDifferentPassengerPayload() {
+        UUID requestId=UUID.randomUUID();
+        GroupBookingRequest original=new GroupBookingRequest(flight,requestId,List.of(
+            new GroupPassenger("Adult","adult@example.com",PassengerType.ADULT,seat,null,null)));
+        when(repository.findGroupRequest(requestId)).thenReturn(Optional.of(
+            new BookingRepository.ExistingGroupRequest(requestId,RequestIdentity.fingerprint(original))));
+        GroupBookingRequest altered=new GroupBookingRequest(flight,requestId,List.of(
+            new GroupPassenger("Different adult","adult@example.com",PassengerType.ADULT,seat,null,null)));
+
+        assertEquals("IDEMPOTENCY_KEY_REUSED",assertThrows(ApiException.class,()->service.createGroup(altered)).code());
+        verify(repository,never()).insertGroupRequest(any(),any(),anyString(),any());
+        verify(repository,never()).insertGroupBooking(any(),anyString(),any(),any(),anyString(),anyString(),
+            any(),any(),any(),any(),any(),anyInt(),any());
+    }
 }

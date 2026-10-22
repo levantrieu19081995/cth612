@@ -37,6 +37,11 @@ public class BookingController {
         Booking result=service.create(request);
         return ResponseEntity.created(URI.create("/api/bookings/"+result.bookingId())).body(result);
     }
+    @Operation(summary="Đặt vé cho nhiều hành khách",description="Đặt đồng bộ 1–9 vé trong cùng giao dịch; requestId hỗ trợ idempotency.")
+    @PostMapping("/bookings/group")
+    public List<Booking> createGroup(@RequestBody @Valid GroupBookingRequest request) {
+        return service.createGroup(request);
+    }
     @Operation(summary="Xem một vé",description="404 BOOKING_NOT_FOUND nếu không có.")
     @GetMapping("/bookings/{bookingId}")
     public Booking booking(@PathVariable UUID bookingId) { return service.booking(bookingId); }

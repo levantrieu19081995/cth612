@@ -73,11 +73,44 @@ class BookingDatabaseTest {
         assertEquals(0L,jdbc.queryForObject("SELECT count(*) FROM bookings WHERE seat_id=?",Long.class,seat));
         assertEquals(0L,jdbc.queryForObject("SELECT count(*) FROM outbox_events WHERE payload->'payload'->>'flightId'=?",Long.class,flight.toString()));
     }
+    @Test void groupCreatesOrderedAdultAndZeroPaymentInfantAtomically() {
+        BookingService service=new BookingService(new BookingRepository(jdbc),JsonMapper.builder().build(),manager);
+        UUID requestId=UUID.randomUUID();
+        GroupBookingRequest request=new GroupBookingRequest(flight,requestId,List.of(
+            new GroupPassenger("Adult","adult@example.com",PassengerType.ADULT,seat,null,null),
+            new GroupPassenger("Infant","infant@example.com",PassengerType.INFANT,null,null,null)));
+
+        List<Booking> bookings=service.createGroup(request);
+
+        assertEquals(2,bookings.size());
+        assertEquals(PassengerType.ADULT,bookings.get(0).passengerType());
+        assertEquals(PassengerType.INFANT,bookings.get(1).passengerType());
+        assertNull(bookings.get(1).seatId());
+        assertNull(bookings.get(1).seatNo());
+        assertEquals(new BigDecimal("1600000.00"),bookings.get(0).amount());
+        assertEquals(0,BigDecimal.ZERO.compareTo(bookings.get(1).amount()));
+        assertEquals(2L,jdbc.queryForObject("SELECT count(*) FROM bookings WHERE group_request_id=?",Long.class,requestId));
+        assertEquals(8L,jdbc.queryForObject("SELECT count(*) FROM outbox_events WHERE aggregate_id IN (SELECT id FROM bookings WHERE group_request_id=?)",Long.class,requestId));
+        assertEquals(requestId,service.createGroup(request).get(1).groupRequestId());
+    }
+    @Test void invalidSeatRollsBackWholeGroupAndGroupKey() {
+        BookingService service=new BookingService(new BookingRepository(jdbc),JsonMapper.builder().build(),manager);
+        UUID requestId=UUID.randomUUID();
+        GroupBookingRequest request=new GroupBookingRequest(flight,requestId,List.of(
+            new GroupPassenger("Adult","adult@example.com",PassengerType.ADULT,seat,null,null),
+            new GroupPassenger("Other adult","other@example.com",PassengerType.ADULT,UUID.randomUUID(),null,null)));
+        assertEquals("SEAT_NOT_FOUND",assertThrows(ApiException.class,()->service.createGroup(request)).code());
+        assertEquals("AVAILABLE",jdbc.queryForObject("SELECT status FROM flight_seats WHERE id=?",String.class,seat));
+        assertEquals(0L,jdbc.queryForObject("SELECT count(*) FROM bookings WHERE group_request_id=?",Long.class,requestId));
+        assertEquals(0L,jdbc.queryForObject("SELECT count(*) FROM booking_groups WHERE request_id=?",Long.class,requestId));
+        assertEquals(0L,jdbc.queryForObject("SELECT count(*) FROM outbox_events WHERE payload->'payload'->>'flightId'=?",Long.class,flight.toString()));
+    }
     @AfterEach void cleanup() {
         if(jdbc==null||flight==null) return;
         jdbc.update("DELETE FROM outbox_events WHERE aggregate_id IN (SELECT id FROM bookings WHERE flight_id=?)",flight);
         jdbc.update("DELETE FROM payments WHERE booking_id IN (SELECT id FROM bookings WHERE flight_id=?)",flight);
         jdbc.update("DELETE FROM bookings WHERE flight_id=?",flight);
+        jdbc.update("DELETE FROM booking_groups WHERE flight_id=?",flight);
         jdbc.update("DELETE FROM flight_seats WHERE flight_id=?",flight);
         jdbc.update("DELETE FROM flights WHERE id=?",flight);
         jdbc.update("DELETE FROM airports WHERE id IN (?,?)",origin,destination);

@@ -54,8 +54,9 @@ public class EventRepository {
     private Payload decode(OutboxRepository.Event event) {
         try {
             JsonNode payload=json.readTree(event.payload()).required("payload");
-            String seat=payload.required("seatNo").asText();
-            if(seat.isBlank()||event.version()!=1) throw new IllegalArgumentException("Invalid event version or seat");
+            JsonNode seatNode=payload.get("seatNo");
+            String seat=seatNode==null||seatNode.isNull()?null:seatNode.asText();
+            if((seat!=null&&seat.isBlank())||event.version()!=1) throw new IllegalArgumentException("Invalid event version or seat");
             return new Payload(UUID.fromString(payload.required("flightId").asText()),seat);
         } catch(RuntimeException ex) {throw new InvalidEventException(ex);}
     }
