@@ -11,7 +11,7 @@ export function usePolling<T>(path:string,interval=4000) {
     let active=true;let timeout:ReturnType<typeof setTimeout>;
     const controller=new AbortController();
     async function poll() {
-      try { const result=await apiGet<T>(path,controller.signal);if(active) { setData(result);setError(""); } }
+      try { const result=await apiGet<T>(path,{signal:controller.signal});if(active) { setData(result);setError(""); } }
       catch(ex) { if(active) setError(ex instanceof Error?ex.message:"Không thể tải dữ liệu."); }
       finally { if(active) {setLoading(false);timeout=setTimeout(()=>void poll(),interval);} }
     }

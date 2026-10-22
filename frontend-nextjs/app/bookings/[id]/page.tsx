@@ -6,6 +6,7 @@ import type {Booking} from "../../../types/booking";
 import type {Timeline} from "../../../types/monitoring";
 
 const labels:Record<string,string>={BOOKING_CREATED:"Tạo yêu cầu đặt vé",SEAT_RESERVED:"Đặt ghế",PAYMENT_RECORDED:"Ghi nhận thanh toán demo",BOOKING_CONFIRMED:"Xác nhận vé"};
+const mealLabels:Record<string,string>={CHICKEN:"Cơm gà",VEGETARIAN:"Suất chay",SANDWICH:"Sandwich"};
 export default function BookingDetails() {
   const params=useParams<{id:string}>();
   const details=usePolling<Booking>("/api/bookings/"+encodeURIComponent(params.id),10000);
@@ -18,7 +19,10 @@ export default function BookingDetails() {
       <p className="booking-code"><strong>{details.data.bookingCode}</strong></p>
       <dl className="details"><dt>Hành khách</dt><dd>{details.data.passengerName}</dd><dt>Email</dt><dd>{details.data.passengerEmail}</dd>
       <dt>Trạng thái</dt><dd>{details.data.status==="CONFIRMED"?"Đã xác nhận":details.data.status}</dd>
-      <dt>Thanh toán demo</dt><dd>{new Intl.NumberFormat("vi-VN",{style:"currency",currency:"VND"}).format(details.data.amount)}</dd>
+      <dt>Hành lý ký gửi</dt><dd>{details.data.baggageKg ? `${details.data.baggageKg} kg` : "Không mua thêm"}</dd>
+      <dt>Suất ăn</dt><dd>{details.data.mealCode ? (mealLabels[details.data.mealCode] ?? details.data.mealCode) : "Không chọn"}</dd>
+      <dt>Phụ thu ghế</dt><dd>{new Intl.NumberFormat("vi-VN",{style:"currency",currency:"VND"}).format(details.data.seatFee)}</dd>
+      <dt>Tổng thanh toán demo</dt><dd>{new Intl.NumberFormat("vi-VN",{style:"currency",currency:"VND"}).format(details.data.amount)}</dd>
       <dt>Đặt lúc</dt><dd>{new Date(details.data.createdAt).toLocaleString("vi-VN")}</dd></dl></div>}
     <h2>Lịch sử sự kiện</h2>
     {history.error&&<p className="alert notice" role="alert">{history.error} Thông tin vé phía trên vẫn được đọc độc lập.</p>}

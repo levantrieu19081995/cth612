@@ -11,9 +11,11 @@ export interface Booking {
   bookingId: string; bookingCode: string; flightId: string; flightNo: string;
   seatId: string; seatNo: string; passengerName: string; passengerEmail: string;
   status: string; createdAt: string; amount: number; currency: string;
+  baggageKg: number | null; mealCode: string | null; seatFee: number;
 }
 export interface CreateBooking {
   requestId: string;
   flightId: string; seatId: string; passengerName: string; passengerEmail: string;
+  baggageKg?: number | null; mealCode?: string | null;
   payment: { amount: number; currency: string };
 }
