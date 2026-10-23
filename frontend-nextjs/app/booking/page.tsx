@@ -49,6 +49,7 @@ import
   IconMinus,
   IconCheckFilled,
   IconX,
+  IconPlaneArrival,
 } from "@tabler/icons-react";
 
 import { DateInput, MonthPickerInput } from '@mantine/dates';
@@ -580,6 +581,7 @@ export default function BookingPage()
                     size="md"
                     radius="md"
                     comboboxProps={{ withinPortal: true, zIndex: 500 }}
+                    leftSection={<IconPlaneDeparture color="blue" />}
                   />
                   <Select
                     label="Nơi đến"
@@ -592,6 +594,7 @@ export default function BookingPage()
                     size="md"
                     radius="md"
                     comboboxProps={{ withinPortal: true, zIndex: 500 }}
+                    leftSection={<IconPlaneArrival color="blue" />}
                   />
                   {searchPeriod === "day" ? (
                     <DateInput
@@ -599,7 +602,7 @@ export default function BookingPage()
                       label="Ngày bay"
                       {...form.getInputProps("date")}
                       disabled={submitting}
-                      leftSection={<IconCalendar size={18} />}
+                      leftSection={<IconCalendar size={18} color="blue" />}
                       size="md"
                       radius="lg"
                       minDate={new Date()}
@@ -612,7 +615,7 @@ export default function BookingPage()
                       label="Tháng bay"
                       {...form.getInputProps("month")}
                       disabled={submitting}
-                      leftSection={<IconCalendar size={18} />}
+                      leftSection={<IconCalendar size={18} color="blue" />}
                       size="md"
                       radius="lg"
                       minDate={new Date()}
@@ -620,7 +623,7 @@ export default function BookingPage()
                       locale="vi"
                     />
                   )}
-                  <Group className="booking-passenger-counter booking-counter-adult" justify="flex-start" wrap="nowrap">
+                  <Group className="booking-passenger-counter booking-counter-adult" justify="flex-start" wrap="nowrap" mt="sm">
                     <Stack gap={0}>
                       <Text fw={500}>Người lớn</Text>
                       <Text fz="sm" c="dimmed" fs="italic">12 tuổi trở lên</Text>
@@ -858,15 +861,16 @@ export default function BookingPage()
                   </Center>
                 ) : (
                   <Stack gap="sm">
-                    <Grid gutter={{ base: "md", lg: "lg" }} align="flex-start">
-                      <Grid.Col span={{ base: 12, lg: 7 }}>
+                    <Grid gutter={{ base: "md", lg: "lg" }} align="stretch">
+                      <Grid.Col span={{ base: 12, md: 7 }}>
                         <Group className="booking-list-heading" justify="space-between" align="center" gap="sm" mb="xs">
-                          <Box>
-                            <Text className="booking-section-kicker" size="xs" fw={800} tt="uppercase" lts={1}>CHỌN CHUYẾN BAY</Text>
-                            <Title order={2} size="xl" id="flight-results-title">Chuyến bay</Title>
-                          </Box>
+
+
+                          <Title order={2} size="xl" id="flight-results-title">Chuyến bay</Title>
+
                           <Badge color="gray" variant="light">{flights.length} chuyến</Badge>
                         </Group>
+
                         <Stack className="booking-flight-list" gap="sm">
                           {flights.map((item) =>
                           {
@@ -889,72 +893,106 @@ export default function BookingPage()
                                 component="button"
                                 type="button"
                                 key={item.flightId}
-                                className={`booking-flight-card booking-carrier-${carrier.tone}${isSelected ? " booking-flight-card-selected" : ""}`}
                                 withBorder
                                 radius="lg"
                                 p="md"
+                                className={`booking-flight-card ticket-ref ticket-ref--${carrier.tone}${isSelected ? " ticket-ref--selected" : ""}`}
                                 disabled={submitting || searching}
                                 aria-pressed={isSelected}
+                                aria-label={`${item.flightNo}, ${item.origin} đến ${item.destination}, ${money(item.price)}. ${soldOut ? "Hết chỗ" : `Còn ${item.availableSeats} ghế`}`}
                                 onClick={() => void chooseFlight(item)}
                               >
-                                <Stack gap="sm">
-                                  <Group className="booking-flight-brand" gap="sm" wrap="nowrap">
-                                    <Box className="booking-carrier-mark" aria-hidden="true">{carrier.short}</Box>
-                                    <Text className="booking-carrier-name" fw={800}>{carrier.name}</Text>
-                                    <Text className="booking-flight-code" fw={700}>{item.flightNo}</Text>
-                                    {isSelected && <Badge color="blue" variant="light" size="sm">Đã chọn</Badge>}
-                                  </Group>
+                                {/* Hàng 1 — Logo/tên hãng, mã chuyến và dấu mở rộng trang trí */}
+                                <Group className="ticket-ref__header" gap="xs" wrap="nowrap">
+                                  <Box className="ticket-ref__mark" aria-hidden="true">
+                                    {carrier.tone === "vietnam" ? "✺" : carrier.short}
+                                  </Box>
+                                  <Text className="ticket-ref__brand" fw={800} title={carrier.name}>
+                                    {carrier.name}
+                                  </Text>
+                                  <Text className="ticket-ref__number" fw={750}>{item.flightNo}</Text>
+                                  <Box className="ticket-ref__chevron" aria-hidden="true">
+                                    <IconArrowRight size={16} stroke={2.2} />
+                                  </Box>
+                                </Group>
 
-                                  <Box className="booking-flight-journey">
-                                    <Group className="booking-ticket-route" gap="xs" align="center" wrap="nowrap">
-                                      <Stack className="booking-ticket-airport" gap={2}>
-                                        <Text className="booking-ticket-time">{dateFormater(item.departureTime, "HH:mm")}</Text>
-                                        <Text className="booking-ticket-code">{item.origin}</Text>
-                                        <Text className="booking-ticket-city" lineClamp={1}>{item.originCity}</Text>
-                                      </Stack>
-                                      <Stack className="booking-ticket-track" gap={4} align="center">
-                                        <Text size="sm" fw={600}>{flightDuration(item.departureTime, item.arrivalTime)}</Text>
-                                        <Group gap={5} w="100%" align="center" wrap="nowrap" aria-hidden="true">
-                                          <Box className="booking-route-dash" />
-                                          <IconPlane size={18} />
-                                          <Box className="booking-route-dash" />
-                                        </Group>
-                                        <Text className="booking-direct-label" size="sm">Hành trình bay</Text>
-                                      </Stack>
-                                      <Stack className="booking-ticket-airport booking-ticket-arrival" gap={2}>
-                                        <Text className="booking-ticket-time">{dateFormater(item.arrivalTime, "HH:mm")}</Text>
-                                        <Text className="booking-ticket-code">{item.destination}</Text>
-                                        <Text className="booking-ticket-city" lineClamp={1}>{item.destinationCity}</Text>
-                                      </Stack>
-                                    </Group>
-                                    <Stack className="booking-fare-block" gap={2}>
-                                      <Text className="booking-ticket-price">{money(item.price)}</Text>
-                                      <Text className="booking-fare-unit">/ hành khách</Text>
-                                      <Box className="booking-ticket-cta">
-                                        {isSelected ? "Đang chọn" : soldOut ? "Hết chỗ" : "Chọn chuyến"}
-                                        <IconArrowRight size={16} aria-hidden="true" />
-                                      </Box>
+                                {/* Hàng 2 — Giờ đi / thời lượng / giờ đến + giá cùng hàng */}
+                                <Box className="ticket-ref__main">
+                                  <Box className="ticket-ref__route">
+                                    <Stack gap={2} className="ticket-ref__airport">
+                                      <Text className="ticket-ref__time">{dateFormater(item.departureTime, "HH:mm")}</Text>
+                                      <Text className="ticket-ref__iata">{item.origin}</Text>
+                                      <Text className="ticket-ref__city" lineClamp={1}>{item.originCity}</Text>
+                                    </Stack>
+
+                                    <Stack gap={3} align="center" className="ticket-ref__track">
+                                      <Text className="ticket-ref__duration">
+                                        {flightDuration(item.departureTime, item.arrivalTime)}
+                                      </Text>
+                                      <Group gap={5} wrap="nowrap" w="100%" align="center" aria-hidden="true">
+                                        <Box className="ticket-ref__dash" />
+                                        <IconPlane size={17} stroke={1.8} />
+                                        <Box className="ticket-ref__dash" />
+                                      </Group>
+                                      <Text className="ticket-ref__direct">Bay thẳng</Text>
+                                    </Stack>
+
+                                    <Stack gap={2} className="ticket-ref__airport ticket-ref__airport--arrival">
+                                      <Text className="ticket-ref__time">{dateFormater(item.arrivalTime, "HH:mm")}</Text>
+                                      <Text className="ticket-ref__iata">{item.destination}</Text>
+                                      <Text className="ticket-ref__city" lineClamp={1}>{item.destinationCity}</Text>
                                     </Stack>
                                   </Box>
 
-                                  <Group className="booking-flight-meta" gap={8} wrap="wrap">
-                                    <Text className="booking-flight-date" size="sm">
-                                      <IconCalendar size={16} />
-                                      {new Date(item.departureTime).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}
+                                  <Stack className="ticket-ref__fare" gap={0} align="flex-end">
+                                    <Text className="ticket-ref__amount">{money(item.price)}</Text>
+                                    <Text className="ticket-ref__unit">/ hành khách</Text>
+                                  </Stack>
+                                </Box>
+
+                                {/* Hàng 3 — Ngày, các đặc điểm và nút chọn bên phải */}
+                                <Box className="ticket-ref__footer">
+                                  <Stack className="ticket-ref__details" gap={7}>
+                                    <Group className="ticket-ref__date" gap={6} wrap="nowrap">
+                                      <IconCalendar size={15} stroke={1.8} />
+                                      <Text span>
+                                        {new Date(item.departureTime).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}
+                                        {" · "}
+                                        {new Date(item.departureTime).toLocaleDateString("vi-VN", { weekday: "long", timeZone: "Asia/Ho_Chi_Minh" })}
+                                      </Text>
+                                    </Group>
+                                    <Group gap={6} wrap="wrap" className="ticket-ref__badges">
+                                      <Badge color={soldOut ? "red" : canFit ? "green" : "orange"} variant="light" radius="sm" leftSection={!soldOut ? <IconCheck size={12} /> : undefined}>
+                                        {soldOut ? "Hết chỗ" : `Còn ${item.availableSeats} ghế`}
+                                      </Badge>
+                                      <Badge color="blue" variant="light" radius="sm">
+                                        Chọn hạng ghế
+                                      </Badge>
+                                      <Badge color="orange" variant="light" radius="sm">
+                                        Dịch vụ mua thêm
+                                      </Badge>
+                                      {!canFit && !soldOut && (
+                                        <Badge color="red" variant="light" radius="sm">
+                                          Thiếu ghế cho nhóm {requiredSeatCount} người
+                                        </Badge>
+                                      )}
+                                    </Group>
+                                  </Stack>
+                                  <Box className="ticket-ref__cta" aria-hidden="true">
+                                    <Text span fw={750}>
+                                      {isSelected ? "Đang chọn" : soldOut ? "Hết chỗ" : "Chọn chuyến"}
                                     </Text>
-                                    <Badge color={soldOut ? "red" : canFit ? "teal" : "orange"} variant="light">
-                                      {soldOut ? "Hết chỗ" : `Còn ${item.availableSeats} ghế`}
-                                    </Badge>
-                                    <Badge color="blue" variant="light">Chọn ghế theo hạng</Badge>
-                                    {!canFit && !soldOut && <Badge color="orange" variant="light">Không đủ {requiredSeatCount} ghế</Badge>}
-                                  </Group>
-                                </Stack>
+                                    <IconArrowRight size={16} />
+                                  </Box>
+                                </Box>
                               </Paper>
+
                             );
                           })}
                         </Stack>
+
                       </Grid.Col>
-                      <Grid.Col span={{ base: 12, lg: 5 }}>
+                      <Grid.Col span={{ base: 12, md: 5 }}>
                         <Paper
                           className="booking-panel booking-seat-panel" component="section" withBorder radius="lg" p={{ base: "md", sm: "lg" }} shadow="xs" aria-labelledby="seat-passenger-title">
                           <Stack gap="md">

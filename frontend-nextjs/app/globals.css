@@ -3513,6 +3513,26 @@ small,
   outline-color: #1769e0;
 }
 
+@media (min-width: 992px) {
+  .booking-page-shell .booking-seat-panel {
+    position: sticky;
+    top: 16px;
+    align-self: start;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .booking-page-shell .booking-seat-panel {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
 /* Restrained warm-neutral theme shared across the application. */
 :root {
   color-scheme: light;

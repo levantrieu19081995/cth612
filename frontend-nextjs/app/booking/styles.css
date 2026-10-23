@@ -1,1028 +1,347 @@
-/* =======================================================================
-   CTH612 Flight booking – phiên bản bám sát giao diện mẫu 23/10/2026
-   Import SAU globals.css. Chỉ style .booking-reference; không sửa logic.
-   Hero image: đặt booking-hero-art.webp trong thư mục public/.
-   ======================================================================= */
-:root {
-    --br-blue: #0965f4;
-}
-
-body:has(.booking-page-shell.booking-reference) {
-    background: #f4f8ff !important;
-}
-
-body:has(.booking-page-shell.booking-reference) .app-shell {
-    background: #f4f8ff !important;
-}
-
-body:has(.booking-page-shell.booking-reference) .site-header {
-    background: #fff !important;
-    border-bottom: 1px solid #e1e9f6 !important;
-    margin-bottom: 12px;
-    border-radius: 0 0 12px 12px;
-}
-
-body:has(.booking-page-shell.booking-reference) .brand-mark,
-body:has(.booking-page-shell.booking-reference) .header-cta {
-    background: #0965f4 !important;
-    border-color: #0965f4 !important;
-    color: #fff !important;
-}
-
-body:has(.booking-page-shell.booking-reference) .site-nav a[aria-current="page"] {
-    background: #e9f2ff !important;
-    color: #095fdd !important;
-}
-
-.booking-page-shell.booking-reference {
-    --br-ink: #0d234c;
-    --br-muted: #617697;
-    --br-line: #dce8f7;
-    --br-blue: #0965f4;
-    --br-green: #0fad76;
-    --br-orange: #f07823;
-    --br-violet: #8845d8;
-    --palette-green-6: #0965f4;
-    --ui-primary: #0965f4;
-    --ui-primary-hover: #034cc7;
-    background: radial-gradient(ellipse at 85% 0, #edf6ff 5%, #f4f8ff 55%, #f8fbff 100%) !important;
-    color: var(--br-ink) !important;
-    font-family: var(--font-be-vietnam-pro, Inter, Arial, sans-serif);
-    padding-bottom: 64px;
-    overflow-x: clip;
-}
-
-.booking-page-shell.booking-reference>.mantine-Container-root {
-    max-width: 1440px;
-}
-
-.booking-page-shell.booking-reference :is(.mantine-Title-root, .mantine-InputWrapper-label) {
-    color: var(--br-ink) !important;
-}
-
-.booking-page-shell.booking-reference .mantine-InputWrapper-label {
-    font-size: 14px;
-    font-weight: 700;
-    padding-bottom: 5px;
-}
-
-.booking-page-shell.booking-reference .mantine-InputWrapper-description {
-    font-size: 13px;
-}
-
-.booking-page-shell.booking-reference .mantine-Input-input {
-    border-radius: 9px !important;
-    min-height: 42px;
-    border: 1px solid #d5e2f2 !important;
-    background: #fff !important;
-    color: var(--br-ink) !important;
-    font-weight: 550;
-}
-
-.booking-page-shell.booking-reference .mantine-Input-input:focus-within,
-.booking-page-shell.booking-reference .mantine-Input-input:focus {
-    border-color: #4391fc !important;
-    box-shadow: 0 0 0 3px #0e6fff16 !important;
-}
-
-.booking-page-shell.booking-reference :is(.booking-stepper-card, .booking-search-card, .booking-seat-panel) {
-    background: #fff !important;
-    border: 1px solid var(--br-line) !important;
-    border-radius: 14px !important;
-    box-shadow: 0 6px 23px #1c5d9912 !important;
-}
-
-.booking-page-shell.booking-reference :is(.mantine-Paper-root, .mantine-Button-root, .mantine-Alert-root) {
-    font-family: inherit;
-}
-
-.booking-page-shell.booking-reference :is(button, a, input):focus-visible {
-    outline: 3px solid #72aefe;
-    outline-offset: 2px;
-}
-
-/* Hero: minh họa máy bay lấy từ chính ảnh tham chiếu (không chứa chữ) */
-.booking-page-shell.booking-reference .booking-hero {
-    background-image: linear-gradient(90deg, #e8f3ff4d 0%, #ffffff00 72%), url('/booking-hero-art.webp') !important;
-    background-color: #a6d5fa !important;
-    background-size: cover !important;
-    background-position: center !important;
-    border: 1px solid #acd8fe !important;
-    min-height: 266px;
-    padding: 32px 38px !important;
-    position: relative;
-    border-radius: 14px !important;
-    box-shadow: 0 10px 27px #0d6ad114 !important;
-}
-
-.booking-page-shell.booking-reference .booking-hero::before,
-.booking-page-shell.booking-reference .booking-hero::after {
-    display: none !important;
-}
-
-.booking-page-shell.booking-reference .booking-hero-layout {
-    position: relative;
-    z-index: 1;
-}
-
-.booking-page-shell.booking-reference .booking-hero-copy {
-    flex: 1 1 460px;
-    min-width: 0;
-}
-
-.booking-page-shell.booking-reference .booking-hero .mantine-Title-root {
-    color: #091f48 !important;
-    font-size: clamp(31px, 3.3vw, 48px) !important;
-    line-height: 1.12;
-    font-weight: 850 !important;
-    letter-spacing: -.047em !important;
-}
-
-.booking-page-shell.booking-reference .booking-hero .mantine-Title-root span {
-    color: #0c64e9 !important;
-}
-
-.booking-page-shell.booking-reference .booking-hero-copy>.mantine-Box-root .mantine-Text-root {
-    font-size: 15px;
-    color: #24436c !important;
-    line-height: 1.6;
-}
-
-.booking-page-shell.booking-reference .booking-hero-kicker {
-    height: 29px;
-    background: #fffffff0 !important;
-    color: #0d5be0 !important;
-    border: 1px solid #fff !important;
-    font-weight: 800;
-    letter-spacing: .04em;
-    align-self: flex-start;
-}
-
-.booking-page-shell.booking-reference .booking-hero-highlights {
-    gap: 16px !important;
-}
-
-.booking-page-shell.booking-reference .booking-hero-pill {
-    background: transparent !important;
-    padding: 0 !important;
-    border: 0 !important;
-}
-
-.booking-page-shell.booking-reference .booking-hero-pill .mantine-ThemeIcon-root {
-    color: #fff !important;
-    box-shadow: 0 4px 10px #1f426820;
-}
-
-.booking-page-shell.booking-reference .booking-hero-pill .mantine-ThemeIcon-root[data-color="teal"] {
-    background: #12ad72 !important;
-}
-
-.booking-page-shell.booking-reference .booking-hero-pill .mantine-ThemeIcon-root[data-color="blue"] {
-    background: #0965f4 !important;
-}
-
-.booking-page-shell.booking-reference .booking-hero-pill .mantine-ThemeIcon-root[data-color="orange"] {
-    background: #f27937 !important;
-}
-
-.booking-page-shell.booking-reference .booking-hero-pill .mantine-Text-root {
-    font-size: 13px !important;
-    color: #14345d !important;
-    font-weight: 700;
-}
-
-.booking-page-shell.booking-reference .booking-hero-route {
-    background: #ffffffed !important;
-    backdrop-filter: blur(8px);
-    width: min(100%, 340px);
-    border: 1px solid #fff !important;
-    border-radius: 17px !important;
-    box-shadow: 0 15px 34px #15579722 !important;
-    flex-shrink: 0;
-}
-
-.booking-page-shell.booking-reference .booking-hero-route-label {
-    color: #0d326e !important;
-    font-weight: 800;
-    letter-spacing: .08em;
-}
-
-.booking-page-shell.booking-reference .booking-hero-route-code {
-    color: #12305a !important;
-    font-size: 22px !important;
-    font-weight: 850;
-}
-
-.booking-page-shell.booking-reference .booking-hero-route-line {
-    color: #12ad72 !important;
-}
-
-.booking-page-shell.booking-reference .booking-hero-route-note {
-    border-top: 1px solid #e4eaf5;
-    padding-top: 10px;
-    color: #547197 !important;
-}
-
-/* Demo banner & progress */
-.booking-page-shell.booking-reference .booking-demo-alert {
-    background: #fff6e9 !important;
-    border: 1px solid #ffc979 !important;
-    border-radius: 11px !important;
-    color: #924b0d !important;
-    padding: 14px 17px !important;
-}
-
-.booking-page-shell.booking-reference .booking-demo-alert .mantine-Alert-title {
-    font-size: 15px;
-    color: #b44d09 !important;
-    font-weight: 800;
-}
-
-.booking-page-shell.booking-reference .booking-demo-alert .mantine-Alert-message {
-    font-size: 13px;
-    color: #805a35 !important;
-    line-height: 1.6;
-}
-
-.booking-page-shell.booking-reference .booking-demo-alert .mantine-Alert-icon {
-    color: #f28b0b !important;
-}
-
-.booking-page-shell.booking-reference .booking-stepper-card {
-    padding: 15px 25px !important;
-}
-
-.booking-page-shell.booking-reference .booking-progress .mantine-Stepper-stepIcon {
-    width: 40px;
-    height: 40px;
-    border: 0 !important;
-    background: #cbd6e6 !important;
-    color: #fff !important;
-}
-
-.booking-page-shell.booking-reference .booking-progress .mantine-Stepper-step[data-progress] .mantine-Stepper-stepIcon,
-.booking-page-shell.booking-reference .booking-progress .mantine-Stepper-step[data-completed] .mantine-Stepper-stepIcon {
-    background: #0965f4 !important;
-    color: #fff !important;
-    box-shadow: 0 0 0 3px #ebf3ff;
-}
-
-.booking-page-shell.booking-reference .booking-progress .mantine-Stepper-stepLabel {
-    font-size: 15px;
-    font-weight: 800;
-    color: #183969;
-}
-
-.booking-page-shell.booking-reference .booking-progress .mantine-Stepper-stepDescription {
-    font-size: 13px;
-    color: #8192af;
-}
-
-.booking-page-shell.booking-reference .booking-progress .mantine-Stepper-separator {
-    background: #b6c9e7 !important;
-}
-
-/* Search */
-.booking-page-shell.booking-reference .booking-search-card {
-    padding: 20px 22px !important;
-}
-
-.booking-page-shell.booking-reference .booking-search-card>.mantine-Stack-root {
-    gap: 14px !important;
-}
-
-.booking-page-shell.booking-reference .booking-search-card .mantine-ThemeIcon-root:not(.booking-hero-pill .mantine-ThemeIcon-root) {
-    color: #fff !important;
-    background: #0869f4 !important;
-    box-shadow: 0 6px 14px #1b66d532;
-}
-
-.booking-page-shell.booking-reference .booking-search-card .mantine-ThemeIcon-root>svg {
-    color: #fff !important;
-}
-
-.booking-page-shell.booking-reference .booking-section-kicker {
-    color: #5775a2 !important;
-    font-size: 12px;
-    font-weight: 850;
-    letter-spacing: .075em;
-}
-
-.booking-page-shell.booking-reference .booking-search-card .mantine-SegmentedControl-root {
-    padding: 3px;
-    background: #eef3fa !important;
-    border: 0 !important;
-    border-radius: 7px !important;
-}
-
-.booking-page-shell.booking-reference .booking-search-card .mantine-SegmentedControl-indicator {
-    background: #bfddff !important;
-    border: 1px solid #a3caff !important;
-    border-radius: 6px !important;
-    box-shadow: none;
-}
-
-.booking-page-shell.booking-reference .booking-search-card .mantine-SegmentedControl-label {
-    font-size: 14px;
-    color: #274b7f;
-    font-weight: 700;
-}
-
-.booking-page-shell.booking-reference .booking-passenger-counter {
-    min-width: 0 !important;
-    display: flex !important;
-    gap: 8px !important;
-    align-items: center !important;
-    padding: 6px 0 !important;
-    border: 0 !important;
-    background: transparent !important;
-    justify-content: flex-start !important;
-}
-
-.booking-page-shell.booking-reference .booking-passenger-counter>.mantine-Stack-root {
-    flex: 1 1 auto;
-}
-
-.booking-page-shell.booking-reference .booking-passenger-counter>.mantine-Stack-root .mantine-Text-root:first-child {
-    font-size: 14px;
-    font-weight: 800;
-    color: #0e264c;
-}
-
-.booking-page-shell.booking-reference .booking-passenger-counter>.mantine-Stack-root .mantine-Text-root:last-child {
-    font-size: 12px;
-}
-
-.booking-page-shell.booking-reference .booking-counter-controls {
-    flex-shrink: 0;
-    gap: 7px !important;
-}
-
-.booking-page-shell.booking-reference .booking-counter-controls .mantine-ActionIcon-root {
-    background: #0965f4 !important;
-    color: #fff !important;
-    border-color: #0965f4 !important;
-    height: 31px;
-    width: 31px;
-    border-radius: 8px !important;
-}
-
-.booking-page-shell.booking-reference .booking-counter-controls .mantine-ActionIcon-root:disabled {
-    background: #d2dce9 !important;
-    color: #8a9caf !important;
-    border-color: #d2dce9 !important;
-}
-
-.booking-page-shell.booking-reference .booking-counter-controls .mantine-NumberInput-root {
-    width: 43px !important;
-}
-
-.booking-page-shell.booking-reference .booking-counter-controls .mantine-NumberInput-input {
-    min-height: 33px !important;
-    height: 33px;
-    text-align: center !important;
-    border-radius: 8px !important;
-    background: #fff !important;
-    font-size: 14px;
-    font-weight: 850;
-}
-
-.booking-page-shell.booking-reference .booking-search-submit {
-    background: #0965f4 !important;
-    border: 1px solid #0965f4 !important;
-    color: white !important;
-    font-weight: 800;
-    border-radius: 9px !important;
-    box-shadow: 0 4px 12px #0965f42e;
-}
-
-.booking-page-shell.booking-reference .booking-search-submit:hover:not(:disabled) {
-    background: #034dce !important;
-    transform: translateY(-1px);
-}
-
-/* Flight results: compact tickets as in mockup */
-.booking-page-shell.booking-reference .booking-flight-panel {
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-}
-
-.booking-page-shell.booking-reference .booking-flight-panel>.mantine-Stack-root {
-    gap: 10px !important;
-}
-
-.booking-page-shell.booking-reference .booking-flight-panel .mantine-Grid-col:first-child {
-    background: white;
-    border: 1px solid var(--br-line);
-    box-shadow: 0 6px 23px #1c5d9912;
-    border-radius: 14px;
-    padding: 16px !important;
-    min-width: 0;
-}
-
-.booking-page-shell.booking-reference .booking-flight-panel .mantine-Grid-col:nth-child(2) {
-    min-width: 0;
-    padding: 0 !important;
-}
-
-.booking-page-shell.booking-reference .booking-list-heading {
-    margin: 0 0 7px;
-}
-
-.booking-page-shell.booking-reference .booking-list-heading .mantine-Title-root {
-    font-size: 22px;
-    font-weight: 800;
-}
-
-.booking-page-shell.booking-reference .booking-list-heading .mantine-Badge-root {
-    background: #eef5ff;
-    color: #466487;
-}
-
-.booking-page-shell.booking-reference .booking-flight-list {
-    gap: 10px !important;
-}
-
-.booking-page-shell.booking-reference .booking-flight-card {
+/* FLIGHT TICKET V2 — only the booking result cards.
+   Paste AFTER booking-reference.css, OR append at its very end.
+   Markup: FlightCard_TheoAnh_Replace.tsx.
+   Colors are scoped: other panels/theme are unchanged. */
+
+.booking-page-shell.booking-reference .booking-flight-card.ticket-ref {
+    container: flight-ticket / inline-size;
     display: block;
     width: 100%;
-    position: relative;
-    overflow: hidden;
+    min-width: 0;
+    min-height: 0;
+    padding: 15px 16px 14px !important;
+    background: #ffffff !important;
+    border: 1px solid #dce6f5 !important;
+    border-left: 3px solid #2c77ef !important;
+    border-radius: 11px !important;
+    box-shadow: 0 2px 10px rgba(13, 49, 107, 0.035) !important;
     text-align: left;
-    background: #fff !important;
-    color: var(--br-ink) !important;
-    border: 1px solid #dce6f4 !important;
-    border-left: 3px solid #2678e9 !important;
-    border-radius: 10px !important;
-    padding: 14px !important;
-    cursor: pointer;
-    box-shadow: none !important;
-    transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+    color: #10274b !important;
+    transition: background-color .18s, border-color .18s, box-shadow .18s, transform .18s;
 }
 
-.booking-page-shell.booking-reference .booking-flight-card::before {
-    display: none !important;
+.booking-page-shell.booking-reference .booking-flight-card.ticket-ref--vietjet {
+    border-left-color: #ff5f6d !important;
 }
 
-.booking-page-shell.booking-reference .booking-flight-card.booking-carrier-vietjet {
-    border-left-color: #f35c62 !important;
+.booking-page-shell.booking-reference .booking-flight-card.ticket-ref--bamboo {
+    border-left-color: #27b67b !important;
 }
 
-.booking-page-shell.booking-reference .booking-flight-card.booking-carrier-bamboo {
-    border-left-color: #2fc67d !important;
+.booking-page-shell.booking-reference .booking-flight-card.ticket-ref--vietravel {
+    border-left-color: #f5be39 !important;
 }
 
-.booking-page-shell.booking-reference .booking-flight-card.booking-carrier-vietravel {
-    border-left-color: #fbbb2a !important;
+.booking-page-shell.booking-reference .booking-flight-card.ticket-ref--selected {
+    border-color: #4996ff !important;
+    border-left-color: #1265e9 !important;
+    background: linear-gradient(110deg, #f1f7ff, #fff 92%) !important;
+    box-shadow: inset 0 0 0 1px #a8ccff, 0 6px 19px rgba(28, 95, 212, .10) !important;
 }
 
-.booking-page-shell.booking-reference .booking-flight-card-selected {
-    background: #f3f9ff !important;
-    border-color: #6baaff !important;
-    border-left-color: #0965f4 !important;
-    box-shadow: inset 0 0 0 1px #89bfff, 0 4px 16px #0965f417 !important;
-}
-
-.booking-page-shell.booking-reference .booking-flight-card:hover:not(:disabled) {
-    border-color: #84baff !important;
-    box-shadow: 0 8px 22px #266fe71a !important;
+.booking-page-shell.booking-reference .booking-flight-card.ticket-ref:hover:not(:disabled) {
+    border-color: #79aff6 !important;
+    box-shadow: 0 8px 19px rgba(23, 79, 164, .12) !important;
     transform: translateY(-1px);
 }
 
-.booking-page-shell.booking-reference .booking-flight-card:disabled {
-    opacity: .65;
-    cursor: not-allowed;
-}
-
-.booking-page-shell.booking-reference .booking-flight-brand {
-    gap: 9px !important;
-    padding: 0 !important;
-    border: 0 !important;
-    min-width: 0;
-}
-
-.booking-page-shell.booking-reference .booking-carrier-mark {
-    min-width: 35px;
-    width: 35px;
-    height: 34px;
-    border-radius: 9px;
-    display: grid;
-    place-items: center;
-    background: #f3a813;
-    color: #fff;
-    font-size: 12px;
-    font-weight: 900;
-}
-
-.booking-page-shell.booking-reference .booking-carrier-vietjet .booking-carrier-mark {
-    background: #ff515d;
-}
-
-.booking-page-shell.booking-reference .booking-carrier-bamboo .booking-carrier-mark {
-    background: #21ad68;
-}
-
-.booking-page-shell.booking-reference .booking-carrier-vietravel .booking-carrier-mark {
-    background: #f0b52f;
-    color: #1c4d9b;
-}
-
-.booking-page-shell.booking-reference .booking-carrier-other .booking-carrier-mark {
-    background: #176de9;
-}
-
-.booking-page-shell.booking-reference .booking-carrier-name {
-    font-size: 14px;
-    color: #153a7a !important;
-    white-space: nowrap;
-}
-
-.booking-page-shell.booking-reference .booking-carrier-vietjet .booking-carrier-name {
-    color: #ed2936 !important;
-}
-
-.booking-page-shell.booking-reference .booking-carrier-bamboo .booking-carrier-name {
-    color: #12885d !important;
-}
-
-.booking-page-shell.booking-reference .booking-carrier-vietravel .booking-carrier-name {
-    color: #2069b2 !important;
-}
-
-.booking-page-shell.booking-reference .booking-flight-code {
-    font-size: 12px;
-    color: #697f9f !important;
-    margin-left: auto;
-    white-space: nowrap;
-}
-
-.booking-page-shell.booking-reference .booking-flight-brand .mantine-Badge-root {
-    font-size: 11px;
-    white-space: nowrap;
-}
-
-.booking-page-shell.booking-reference .booking-flight-journey {
+.booking-page-shell.booking-reference .ticket-ref__header {
     display: flex;
     align-items: center;
-    gap: 14px;
-}
-
-.booking-page-shell.booking-reference .booking-ticket-route {
-    display: flex;
-    flex: 1;
+    width: 100%;
     min-width: 0;
     gap: 8px !important;
 }
 
-.booking-page-shell.booking-reference .booking-ticket-airport {
-    flex: 0 0 28%;
+.booking-page-shell.booking-reference .ticket-ref__mark {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    height: 29px;
+    min-width: 32px;
+    padding: 0 4px;
+    color: #dca621;
+    background: transparent;
+    font-size: 25px;
+    font-weight: 900;
+    letter-spacing: -.05em;
+    line-height: 1;
+}
+
+.booking-page-shell.booking-reference .ticket-ref--vietjet .ticket-ref__mark {
+    color: #ee2235;
+    background: #fff0f1;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.booking-page-shell.booking-reference .ticket-ref--bamboo .ticket-ref__mark {
+    color: #138d61;
+    background: #ecfcf3;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.booking-page-shell.booking-reference .ticket-ref--vietravel .ticket-ref__mark {
+    color: #1e67bd;
+    background: #fff6db;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__brand {
+    color: #12418f !important;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 15px;
+    font-weight: 850;
+    letter-spacing: -.03em;
+}
+
+.booking-page-shell.booking-reference .ticket-ref--vietjet .ticket-ref__brand {
+    color: #e82535 !important;
+    font-style: italic;
+}
+
+.booking-page-shell.booking-reference .ticket-ref--bamboo .ticket-ref__brand {
+    color: #078659 !important;
+}
+
+.booking-page-shell.booking-reference .ticket-ref--vietravel .ticket-ref__brand {
+    color: #145ca4 !important;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__number {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 38%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #27416a !important;
+    font-size: 13px;
+    font-weight: 750;
+    margin-left: 12px;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__chevron {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 0 0 30px;
+    width: 30px;
+    height: 30px;
+    margin-left: auto;
+    background: #f9fbff;
+    border: 1px solid #e1e9f4;
+    border-radius: 8px;
+    color: #1a6aec;
+    transform: rotate(90deg);
+}
+
+.booking-page-shell.booking-reference .ticket-ref__main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(120px, 145px);
+    align-items: end;
+    gap: 13px;
+    margin-top: 10px;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__route {
+    display: grid;
+    grid-template-columns: minmax(0, .8fr) minmax(76px, 1.08fr) minmax(0, .8fr);
+    align-items: start;
+    gap: 6px;
     min-width: 0;
 }
 
-.booking-page-shell.booking-reference .booking-ticket-arrival {
+.booking-page-shell.booking-reference .ticket-ref__airport {
+    min-width: 0;
+    align-items: flex-start;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__airport--arrival {
+    align-items: flex-end;
     text-align: right;
 }
 
-.booking-page-shell.booking-reference .booking-ticket-track {
-    flex: 1;
-    min-width: 55px;
-    color: #397ae4 !important;
-}
-
-.booking-page-shell.booking-reference .booking-ticket-time {
-    font-size: clamp(19px, 1.65vw, 25px) !important;
+.booking-page-shell.booking-reference .ticket-ref__time {
+    color: #0d244d !important;
+    font-size: clamp(19px, 1.7vw, 23px) !important;
     font-weight: 850;
-    color: #0c2652 !important;
-    line-height: 1.15;
+    line-height: 1.14;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.02em;
 }
 
-.booking-page-shell.booking-reference .booking-ticket-code {
-    font-size: 13px !important;
-    font-weight: 800;
-    color: #1e3b67 !important;
-}
-
-.booking-page-shell.booking-reference .booking-ticket-city {
-    font-size: 12px;
-    color: #6283b5 !important;
-}
-
-.booking-page-shell.booking-reference .booking-route-dash {
-    height: 0;
-    border-top: 1px dashed #78aeff;
-    flex: 1;
-}
-
-.booking-page-shell.booking-reference .booking-direct-label {
-    color: #2c77d6 !important;
-    font-weight: 650;
-    font-size: 11px;
-}
-
-.booking-page-shell.booking-reference .booking-fare-block {
-    align-items: flex-end;
-    min-width: 142px;
-    flex: 0 0 auto;
-}
-
-.booking-page-shell.booking-reference .booking-ticket-price {
-    font-size: clamp(18px, 1.7vw, 24px) !important;
-    font-weight: 850;
-    color: #0965ef !important;
-    white-space: nowrap;
-}
-
-.booking-page-shell.booking-reference .booking-fare-unit {
-    font-size: 11px;
-    color: #7790b5 !important;
-}
-
-.booking-page-shell.booking-reference .booking-ticket-cta {
-    background: #0965f4;
-    border: 1px solid #0965f4;
-    color: #fff;
-    border-radius: 7px;
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 11px;
-    margin-top: 5px;
-    min-width: 126px;
-    font-size: 12px;
-    font-weight: 800;
-    box-shadow: 0 4px 11px #0965f41e;
-}
-
-.booking-page-shell.booking-reference .booking-flight-card-selected .booking-ticket-cta {
-    background: #e8f2ff;
-    color: #0958d8;
-    border-color: #b6d5ff;
-}
-
-.booking-page-shell.booking-reference .booking-flight-card:disabled .booking-ticket-cta {
-    background: #9aacca;
-    border-color: #9aacca;
-}
-
-.booking-page-shell.booking-reference .booking-flight-meta {
-    border-top: 1px dashed #e2eaf6;
-    padding-top: 9px;
-    gap: 7px !important;
-}
-
-.booking-page-shell.booking-reference .booking-flight-date {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    color: #6e88a8 !important;
-    font-size: 12px;
-}
-
-.booking-page-shell.booking-reference .booking-flight-meta .mantine-Badge-root {
-    height: 22px;
-    border-radius: 6px !important;
-    font-size: 11px;
-    font-weight: 750;
-    text-transform: none;
-}
-
-/* Seat & passenger sidebar */
-.booking-page-shell.booking-reference .booking-seat-panel {
-    padding: 16px !important;
-    min-width: 0;
-}
-
-.booking-page-shell.booking-reference .booking-seat-panel>.mantine-Stack-root {
-    gap: 14px !important;
-}
-
-.booking-page-shell.booking-reference .booking-seat-panel .mantine-Title-root {
-    font-size: 20px;
-    font-weight: 850;
-}
-
-.booking-page-shell.booking-reference .booking-seat-panel .mantine-Divider-root {
-    border-color: #e4ecf6;
-}
-
-.booking-page-shell.booking-reference .booking-flight-summary {
-    background: #f0fdf7 !important;
-    border: 1px solid #bcebd2 !important;
-    border-radius: 10px !important;
-    color: #173758 !important;
-    box-shadow: none !important;
-}
-
-.booking-page-shell.booking-reference .booking-flight-summary .mantine-ThemeIcon-root {
-    background: #e0f8ed !important;
-    color: #16a26f !important;
-}
-
-.booking-page-shell.booking-reference .booking-flight-summary .mantine-Text-root {
+.booking-page-shell.booking-reference .ticket-ref__iata {
+    color: #22385e !important;
     font-size: 13px;
+    font-weight: 800;
+    letter-spacing: .01em;
 }
 
-.booking-page-shell.booking-reference .booking-flight-summary .mantine-Button-root {
-    color: #0965f4 !important;
+.booking-page-shell.booking-reference .ticket-ref__city {
+    color: #6580ac !important;
     font-size: 12px;
+    font-weight: 500;
 }
 
-.booking-page-shell.booking-reference .booking-seat-map {
-    background: #fff !important;
-    border: 1px solid #e1eaf5 !important;
-    border-radius: 10px !important;
-    box-shadow: 0 3px 10px #0d459d07 !important;
-}
-
-.booking-page-shell.booking-reference .booking-seat-axis {
-    font-size: 12px;
-    color: #536b90 !important;
-    font-weight: 850;
+.booking-page-shell.booking-reference .ticket-ref__track {
+    min-width: 0;
+    color: #1264e8;
+    padding-top: 0;
     align-self: center;
 }
 
-.booking-page-shell.booking-reference .booking-seat-button {
-    font-size: 11px !important;
-    border-radius: 6px !important;
-    min-height: 0 !important;
-    box-shadow: none !important;
-    padding: 0 !important;
+.booking-page-shell.booking-reference .ticket-ref__duration {
+    color: #5a7cbb !important;
+    font-size: 12px;
+    font-weight: 650;
+    text-align: center;
 }
 
-.booking-page-shell.booking-reference .booking-seat-button-available {
-    background: #cbf6df !important;
-    border: 1px solid #65dca1 !important;
-    color: #128458 !important;
+.booking-page-shell.booking-reference .ticket-ref__dash {
+    flex: 1;
+    min-width: 4px;
+    border-top: 1px dotted #2e7deb;
 }
 
-.booking-page-shell.booking-reference .booking-seat-button-unavailable,
-.booking-page-shell.booking-reference .booking-seat-button:disabled:not(.booking-seat-button-selected) {
-    background: #e8edf2 !important;
-    border: 1px solid #e0e5ed !important;
-    color: #94a1b3 !important;
-    opacity: 1 !important;
+.booking-page-shell.booking-reference .ticket-ref__direct {
+    font-size: 12px;
+    font-weight: 750;
+    color: #0d68ef !important;
+    white-space: nowrap;
 }
 
-.booking-page-shell.booking-reference .booking-seat-button-selected {
-    background: #0965f4 !important;
-    border: 1px solid #0965f4 !important;
-    color: #fff !important;
-    box-shadow: 0 0 0 2px #d8e8ff !important;
-    opacity: 1 !important;
+.booking-page-shell.booking-reference .ticket-ref__fare {
+    align-self: end;
+    min-width: 0;
+    padding-bottom: 1px;
+    text-align: right;
 }
 
-.booking-page-shell.booking-reference .booking-seat-class-business.booking-seat-button-available {
-    background: #fff0d5 !important;
-    color: #bd650c !important;
-    border-color: #ffb655 !important;
+.booking-page-shell.booking-reference .ticket-ref__amount {
+    color: #075ff4 !important;
+    font-size: clamp(19px, 1.7vw, 23px) !important;
+    font-weight: 850;
+    line-height: 1.14;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.035em;
+    white-space: nowrap;
 }
 
-.booking-page-shell.booking-reference .booking-seat-class-premium.booking-seat-button-available,
-.booking-page-shell.booking-reference .booking-seat-class-premium_economy.booking-seat-button-available {
-    background: #f0e3ff !important;
-    color: #7940ba !important;
-    border-color: #d5b7fa !important;
+.booking-page-shell.booking-reference .ticket-ref__unit {
+    color: #7292c0 !important;
+    font-size: 12px;
+    font-weight: 500;
 }
 
-.booking-page-shell.booking-reference .booking-seat-pricing-note {
-    background: #f8faff !important;
-    border: 0 !important;
-    color: #6982a8 !important;
+.booking-page-shell.booking-reference .ticket-ref__footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(120px, 145px);
+    align-items: end;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__details {
+    min-width: 0;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__date {
+    color: #6884ae !important;
+    font-size: 13px;
+    min-width: 0;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__date .mantine-Text-root {
+    font-size: 13px;
+    color: inherit !important;
+    white-space: nowrap;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__badges {
+    row-gap: 6px !important;
+    column-gap: 5px !important;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__badges .mantine-Badge-root {
+    min-height: 23px;
+    height: auto;
+    max-width: 100%;
+    padding: 3px 8px;
+    font-size: 12px;
+    line-height: 1.3;
+    font-weight: 750;
+    text-transform: none;
+    letter-spacing: 0;
+    border-radius: 6px;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__badges .mantine-Badge-label {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 36px;
+    width: 100%;
+    padding: 8px 10px;
+    background: #0864f4;
+    color: white;
+    border: 1px solid #0864f4;
+    border-radius: 7px;
+    box-shadow: 0 5px 12px rgba(10, 88, 229, .14);
     font-size: 12px;
 }
 
-.booking-page-shell.booking-reference .booking-passenger-card {
-    background: #fff !important;
-    border: 1px solid #dfe9f7 !important;
-    border-radius: 11px !important;
-    box-shadow: none !important;
+.booking-page-shell.booking-reference .ticket-ref--selected .ticket-ref__cta {
+    color: #0960df;
+    background: #e5f1ff;
+    border-color: #b9d8ff;
 }
 
-.booking-page-shell.booking-reference .booking-passenger-card .mantine-Paper-root {
-    border-color: #e4ebf5 !important;
+.booking-page-shell.booking-reference .ticket-ref:disabled .ticket-ref__cta {
+    background: #93a3bb;
+    border-color: #93a3bb;
+    box-shadow: none;
 }
 
-.booking-page-shell.booking-reference .booking-passenger-card :is(.mantine-Title-root, .mantine-TextInput-label) {
-    color: #102953 !important;
-}
-
-.booking-page-shell.booking-reference .booking-addon-option {
-    background: #f5f9ff !important;
-    border: 1px solid #dce8fc !important;
-    border-radius: 10px !important;
-    padding: 10px !important;
-}
-
-.booking-page-shell.booking-reference .booking-addon-baggage {
-    background: #f1f7ff !important;
-}
-
-.booking-page-shell.booking-reference .booking-addon-meal {
-    background: #fbf6ff !important;
-    border-color: #eadcfb !important;
-}
-
-.booking-page-shell.booking-reference .booking-addon-baggage svg {
-    color: #0965f4 !important;
-}
-
-.booking-page-shell.booking-reference .booking-addon-meal svg {
-    color: #8845d8 !important;
-}
-
-.booking-page-shell.booking-reference .booking-total-card {
-    background: linear-gradient(110deg, #eaf8ff, #effbf6) !important;
-    border: 1px solid #d1e9ed !important;
-    box-shadow: none !important;
-}
-
-.booking-page-shell.booking-reference .booking-total-card .mantine-Text-root[data-size="xl"] {
-    color: #de601a !important;
-}
-
-.booking-page-shell.booking-reference .booking-price-details>summary {
-    color: #138555 !important;
-    font-weight: 800;
-}
-
-.booking-page-shell.booking-reference .booking-confirm-button {
-    background: #0965f4 !important;
-    border-color: #0965f4 !important;
-    color: #fff !important;
-    border-radius: 9px !important;
-    font-weight: 850;
-}
-
-.booking-page-shell.booking-reference .booking-confirm-button:hover:not(:disabled) {
-    background: #064ac9 !important;
-}
-
-.booking-page-shell.booking-reference .booking-confirmed-ticket {
-    background: #f3fcf6 !important;
-    border-left: 4px solid #18aa70 !important;
-    border-color: #d1eddd !important;
-}
-
-@media(max-width:1190px) {
-    .booking-page-shell.booking-reference .booking-flight-journey {
-        align-items: flex-start;
-        flex-wrap: wrap;
+/* Responsive to CARD width, not viewport — works in your 7/5 grid. */
+@container flight-ticket (max-width: 470px) {
+    .ticket-ref__main {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
     }
 
-    .booking-page-shell.booking-reference .booking-fare-block {
-        width: 100%;
-        align-items: flex-start;
-        flex-direction: row;
-        gap: 9px;
-        flex-wrap: wrap;
+    .ticket-ref__route {
+        grid-template-columns: minmax(0, .8fr) minmax(70px, 1.08fr) minmax(0, .8fr);
     }
 
-    .booking-page-shell.booking-reference .booking-fare-unit {
-        align-self: center;
+    .ticket-ref__fare {
+        align-items: flex-start !important;
+        text-align: left !important;
     }
 
-    .booking-page-shell.booking-reference .booking-ticket-cta {
-        margin: 0 0 0 auto;
+    .ticket-ref__footer {
+        grid-template-columns: 1fr !important;
+    }
+
+    .ticket-ref__cta {
+        justify-self: stretch;
     }
 }
 
-@media(max-width:991px) {
-    .booking-page-shell.booking-reference .booking-flight-panel .mantine-Grid-col:first-child {
-        padding: 14px !important;
-    }
-
-    .booking-page-shell.booking-reference .booking-flight-panel .mantine-Grid-col:nth-child(2) {
-        margin-top: 14px;
-    }
-
-    .booking-page-shell.booking-reference .booking-flight-journey {
-        flex-wrap: nowrap;
-    }
-
-    .booking-page-shell.booking-reference .booking-fare-block {
-        width: auto;
-        flex-direction: column;
-        align-items: flex-end;
-        min-width: 132px;
-    }
-}
-
-@media(max-width:650px) {
-    .booking-page-shell.booking-reference {
-        padding-top: 8px !important;
-    }
-
-    .booking-page-shell.booking-reference>.mantine-Container-root {
-        padding-left: 12px;
-        padding-right: 12px;
-    }
-
-    .booking-page-shell.booking-reference .booking-hero {
-        padding: 22px 17px !important;
-        min-height: 0;
-        background-position: 64% center !important;
-    }
-
-    .booking-page-shell.booking-reference .booking-hero-copy {
-        flex: 1 1 100%;
-    }
-
-    .booking-page-shell.booking-reference .booking-hero-route {
-        width: 100%;
-        max-width: none;
-    }
-
-    .booking-page-shell.booking-reference .booking-hero-highlights {
-        gap: 9px !important;
-    }
-
-    .booking-page-shell.booking-reference .booking-hero-pill .mantine-Text-root {
-        font-size: 12px !important;
-    }
-
-    .booking-page-shell.booking-reference .booking-stepper-card {
-        padding: 12px 9px !important;
-    }
-
-    .booking-page-shell.booking-reference .booking-progress .mantine-Stepper-stepDescription {
-        display: none;
-    }
-
-    .booking-page-shell.booking-reference .booking-search-card {
-        padding: 16px !important;
-    }
-
-    .booking-page-shell.booking-reference .booking-flight-panel .mantine-Grid-col:first-child {
-        padding: 12px !important;
-    }
-
-    .booking-page-shell.booking-reference .booking-flight-card {
-        padding: 12px !important;
-    }
-
-    .booking-page-shell.booking-reference .booking-flight-journey {
-        flex-wrap: wrap;
-    }
-
-    .booking-page-shell.booking-reference .booking-ticket-route {
-        width: 100%;
-        flex: auto;
-    }
-
-    .booking-page-shell.booking-reference .booking-fare-block {
-        width: 100%;
-        align-items: center;
-        flex-direction: row;
-        gap: 6px;
-        flex-wrap: wrap;
-    }
-
-    .booking-page-shell.booking-reference .booking-ticket-cta {
-        margin: 0 0 0 auto;
-        min-width: 110px;
-    }
-
-    .booking-page-shell.booking-reference .booking-ticket-price {
-        font-size: 20px !important;
-    }
-
-    .booking-page-shell.booking-reference .booking-flight-brand {
-        flex-wrap: wrap;
-    }
-
-    .booking-page-shell.booking-reference .booking-flight-code {
-        margin-left: auto;
-    }
-
-    .booking-page-shell.booking-reference .booking-counter-controls {
-        margin-left: auto;
-    }
-}
-
-@media(max-width:390px) {
-    .booking-page-shell.booking-reference .booking-seat-panel {
-        padding: 10px !important;
-    }
-
-    .booking-page-shell.booking-reference .booking-ticket-time {
-        font-size: 18px !important;
-    }
-
-    .booking-page-shell.booking-reference .booking-ticket-cta {
-        min-width: 92px;
-        font-size: 11px;
-    }
-
-    .booking-page-shell.booking-reference .booking-counter-controls {
-        gap: 4px !important;
-    }
-}
-
-@media(prefers-reduced-motion:reduce) {
-    .booking-page-shell.booking-reference :is(.booking-flight-card, .booking-search-submit, .booking-confirm-button) {
+@media (prefers-reduced-motion: reduce) {
+    .booking-page-shell.booking-reference .ticket-ref {
         transition: none !important;
         transform: none !important;
     }
