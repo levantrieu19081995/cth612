@@ -12,7 +12,7 @@ import vn.ctu.distributedflight.service.RequestIdentity;
 public class BookingRepository {
     private final JdbcTemplate jdbc;
     public BookingRepository(JdbcTemplate jdbc) { this.jdbc=jdbc; }
-    public List<Flight> flights(String origin,String destination,LocalDate date) {
+    public List<Flight> flights(String origin,String destination,LocalDate date,YearMonth month,int requiredSeats) {
         String sql="""
             SELECT f.*, a.code origin, b.code destination, a.city origin_city, b.city destination_city,
             (SELECT count(*) FROM flight_seats s WHERE s.flight_id=f.id AND s.status='AVAILABLE') available_seats
@@ -23,17 +23,20 @@ public class BookingRepository {
         List<Object> args=new ArrayList<>();
         if(origin!=null&&!origin.isBlank()) { sql+=" AND a.code=?"; args.add(origin.trim().toUpperCase(Locale.ROOT)); }
         if(destination!=null&&!destination.isBlank()) { sql+=" AND b.code=?"; args.add(destination.trim().toUpperCase(Locale.ROOT)); }
-        if(date!=null) {
+        if(date!=null||month!=null) {
             ZoneId zone=ZoneId.of("Asia/Ho_Chi_Minh");
             sql+=" AND f.departure_time>=? AND f.departure_time<?";
-            args.add(Timestamp.from(date.atStartOfDay(zone).toInstant()));
-            args.add(Timestamp.from(date.plusDays(1).atStartOfDay(zone).toInstant()));
+            LocalDate start=date!=null?date:month.atDay(1);
+            LocalDate end=date!=null?date.plusDays(1):month.plusMonths(1).atDay(1);
+            args.add(Timestamp.from(start.atStartOfDay(zone).toInstant()));
+            args.add(Timestamp.from(end.atStartOfDay(zone).toInstant()));
         }
         sql+=" ORDER BY f.departure_time LIMIT 100";
         return jdbc.query(sql,(rs,n)->new Flight(rs.getObject("id",UUID.class),rs.getString("flight_no"),
             rs.getString("origin"),rs.getString("destination"),rs.getString("origin_city"),rs.getString("destination_city"),
             rs.getTimestamp("departure_time").toInstant(),rs.getTimestamp("arrival_time").toInstant(),
-            rs.getString("status"),rs.getLong("available_seats"),BookingPolicy.DEMO_FARE,"VND"),args.toArray());
+            rs.getString("status"),rs.getLong("available_seats"),BookingPolicy.DEMO_FARE,"VND",
+            rs.getLong("available_seats")>=requiredSeats),args.toArray());
     }
     public boolean flightExists(UUID id) {
         return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM flights WHERE id=?)",Boolean.class,id));
@@ -57,12 +60,12 @@ public class BookingRepository {
         return jdbc.update("UPDATE flight_seats SET status='BOOKED',version=version+1 WHERE id=? AND flight_id=? AND status='AVAILABLE'",
             seatId,flightId)==1;
     }
-    public void insertBooking(UUID id,String code,CreateBooking request,Instant time) {
+    public void insertBooking(UUID id,String code,CreateBooking request,BigDecimal seatFee,Instant time) {
         jdbc.update("""
-            INSERT INTO bookings(id,booking_code,flight_id,seat_id,passenger_name,passenger_email,status,created_at,request_id,request_fingerprint)
-            VALUES (?,?,?,?,?,?,'CONFIRMED',?,?,?)
+            INSERT INTO bookings(id,booking_code,flight_id,seat_id,passenger_name,passenger_email,status,created_at,request_id,request_fingerprint,baggage_kg,meal_code,seat_fee,passenger_type)
+            VALUES (?,?,?,?,?,?,'CONFIRMED',?,?,?,?,?,?,?)
             """,id,code,request.flightId(),request.seatId(),request.passengerName().trim(),request.passengerEmail().trim(),Timestamp.from(time),
-            request.requestId(),RequestIdentity.fingerprint(request));
+            request.requestId(),RequestIdentity.fingerprint(request),request.baggageKg(),request.mealCode(),seatFee,request.passengerType());
     }
     public void insertPayment(UUID bookingId,CreateBooking request,Instant time) {
         jdbc.update("""
@@ -77,14 +80,22 @@ public class BookingRepository {
     }
     public Optional<Booking> booking(UUID id) {
         return jdbc.query("""
-            SELECT b.*,f.flight_no,s.seat_no,p.amount,p.currency FROM bookings b
+            SELECT b.*,f.flight_no,s.seat_no,s.cabin_class,p.amount,p.currency FROM bookings b
             JOIN flights f ON b.flight_id=f.id JOIN flight_seats s ON b.seat_id=s.id
             JOIN payments p ON p.booking_id=b.id WHERE b.id=?
             """,(rs,n)->new Booking(rs.getObject("id",UUID.class),rs.getString("booking_code"),
             rs.getObject("flight_id",UUID.class),rs.getString("flight_no"),rs.getObject("seat_id",UUID.class),
             rs.getString("seat_no"),rs.getString("passenger_name"),rs.getString("passenger_email"),
-            rs.getString("status"),rs.getTimestamp("created_at").toInstant(),rs.getBigDecimal("amount"),rs.getString("currency")),id)
+            rs.getString("status"),rs.getTimestamp("created_at").toInstant(),rs.getBigDecimal("amount"),rs.getString("currency"),
+            nullableInteger(rs,"baggage_kg"),rs.getString("meal_code"),rs.getBigDecimal("seat_fee"),
+            rs.getString("passenger_type"),rs.getString("cabin_class"),
+            BookingPolicy.cabinPrice(rs.getString("cabin_class"))),id)
             .stream().findFirst();
+    }
+
+    private Integer nullableInteger(ResultSet rs,String column) throws SQLException {
+        Object value=rs.getObject(column);
+        return value==null?null:((Number)value).intValue();
     }
 
     public record ExistingRequest(UUID bookingId, String fingerprint) {}

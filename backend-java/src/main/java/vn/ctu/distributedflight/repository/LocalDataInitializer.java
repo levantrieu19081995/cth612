@@ -53,10 +53,13 @@ public class LocalDataInitializer implements ApplicationRunner {
         // Stable IDs preserve existing bookings and seat states on restart.
         for(int row=1;row<=6;row++) for(char col='A';col<='F';col++) {
             String seat="%02d%c".formatted(row,col);
+            String cabinClass=row<=2?"ECONOMY":row<=4?"PREMIUM_ECONOMY":"BUSINESS";
             jdbc.update("""
                 INSERT INTO flight_seats(id,flight_id,seat_no,cabin_class,status)
-                VALUES (?,?,?,'ECONOMY','AVAILABLE') ON CONFLICT (id) DO NOTHING
-                """,id("seat:"+flightKey+":"+seat),flightId,seat);
+                VALUES (?,?,?,?, 'AVAILABLE')
+                ON CONFLICT (id) DO UPDATE SET cabin_class=excluded.cabin_class
+                WHERE flight_seats.status='AVAILABLE'
+                """,id("seat:"+flightKey+":"+seat),flightId,seat,cabinClass);
         }
     }
 }

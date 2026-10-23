@@ -71,6 +71,10 @@ ON outbox_events (published_at, occurred_at);
 -- Additive migrations preserve existing local/demo bookings.
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS request_id UUID NULL;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS request_fingerprint STRING NULL;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS baggage_kg INT8 NULL;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS meal_code STRING NULL;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS seat_fee DECIMAL(18,2) NOT NULL DEFAULT 0;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS passenger_type STRING NOT NULL DEFAULT 'ADULT';
 CREATE UNIQUE INDEX IF NOT EXISTS idx_booking_request_id ON bookings(request_id) WHERE request_id IS NOT NULL;
 ALTER TABLE outbox_events ADD COLUMN IF NOT EXISTS lease_owner UUID NULL;
 ALTER TABLE outbox_events ADD COLUMN IF NOT EXISTS lease_until TIMESTAMPTZ NULL;

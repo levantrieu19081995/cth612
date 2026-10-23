@@ -6,6 +6,7 @@ import org.junit.jupiter.api.*;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import java.time.YearMonth;
 import vn.ctu.distributedflight.service.BookingService;
 class BookingApiTest {
     private MockMvc mvc;
@@ -28,5 +29,20 @@ class BookingApiTest {
     }
     @Test void unsupportedMethodReturns405() throws Exception {
         mvc.perform(delete("/api/flights")).andExpect(status().isMethodNotAllowed()).andExpect(jsonPath("$.code").value("METHOD_NOT_ALLOWED"));
+    }
+    @Test void monthFilterIsAccepted() throws Exception {
+        BookingService service=mock(BookingService.class);
+        mvc=MockMvcBuilders.standaloneSetup(new BookingController(service)).setControllerAdvice(new ApiErrorHandler()).build();
+        mvc.perform(get("/api/flights").param("month","2026-10"))
+            .andExpect(status().isOk());
+        verify(service).flights(null,null,null,YearMonth.of(2026,10),1);
+    }
+    @Test void dayAndMonthFiltersCannotBeCombined() throws Exception {
+        mvc.perform(get("/api/flights").param("date","2026-10-22").param("month","2026-10"))
+            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_DATE_FILTER"));
+    }
+    @Test void requiredSeatCountIsValidated() throws Exception {
+        mvc.perform(get("/api/flights").param("requiredSeats","10"))
+            .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_PARTY_SIZE"));
     }
 }
