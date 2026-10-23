@@ -6,6 +6,7 @@ export function __getTimChuyenBay(params: {
     destination: string | null;
     date?: string;
     month?: string;
+    requiredSeats?: number;
 }): Promise<Flight[]>
 {
     return apiGet<Flight[]>("/api/flights", { params });
