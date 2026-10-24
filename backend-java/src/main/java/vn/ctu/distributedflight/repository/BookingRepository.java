@@ -33,11 +33,31 @@ public class BookingRepository {
             args.add(Timestamp.from(end.atStartOfDay(zone).toInstant()));
         }
         sql+=" ORDER BY f.departure_time LIMIT 100";
-        return jdbc.query(sql,(rs,n)->new Flight(rs.getObject("id",UUID.class),rs.getString("flight_no"),
+        List<Flight> base=jdbc.query(sql,(rs,n)->new Flight(rs.getObject("id",UUID.class),rs.getString("flight_no"),
             rs.getString("origin"),rs.getString("destination"),rs.getString("origin_city"),rs.getString("destination_city"),
             rs.getTimestamp("departure_time").toInstant(),rs.getTimestamp("arrival_time").toInstant(),
             rs.getString("status"),rs.getLong("available_seats"),BookingPolicy.DEMO_FARE,"VND",
-            rs.getLong("available_seats")>=requiredSeats),args.toArray());
+            rs.getLong("available_seats")>=requiredSeats,rs.getString("airline_code"),rs.getString("airline_name"),
+            List.of(),BookingPolicy.passengerFares(),BookingPolicy.ancillaries()),args.toArray());
+        if(base.isEmpty()) return base;
+        Map<UUID,Map<String,long[]>> counts=new HashMap<>();
+        String marks=String.join(",",Collections.nCopies(base.size(),"?"));
+        jdbc.query("SELECT flight_id,cabin_class,count(*) total,count(*) FILTER (WHERE status='AVAILABLE') available FROM flight_seats WHERE flight_id IN ("
+            +marks+") GROUP BY flight_id,cabin_class",rs->{
+            counts.computeIfAbsent(rs.getObject("flight_id",UUID.class),k->new HashMap<>())
+                .put(rs.getString("cabin_class"),new long[]{rs.getLong("total"),rs.getLong("available")});
+        },base.stream().map(Flight::flightId).toArray());
+        return base.stream().map(f->{
+            Map<String,long[]> byCabin=counts.getOrDefault(f.flightId(),Map.of());
+            List<CabinOffer> cabins=BookingPolicy.CABIN_CLASSES.stream().filter(byCabin::containsKey).map(c->{
+                BigDecimal surcharge=BookingPolicy.cabinPrice(c);
+                return new CabinOffer(c,byCabin.get(c)[0],byCabin.get(c)[1],surcharge,
+                    BookingPolicy.passengerBaseFare("ADULT").add(surcharge),BookingPolicy.passengerBaseFare("CHILD").add(surcharge));
+            }).toList();
+            return new Flight(f.flightId(),f.flightNo(),f.origin(),f.destination(),f.originCity(),f.destinationCity(),
+                f.departureTime(),f.arrivalTime(),f.status(),f.availableSeats(),f.price(),f.currency(),f.sufficientSeats(),
+                f.airlineCode(),f.airlineName(),cabins,f.passengerFares(),f.ancillaries());
+        }).toList();
     }
     public boolean flightExists(UUID id) {
         return Boolean.TRUE.equals(jdbc.queryForObject("SELECT EXISTS(SELECT 1 FROM flights WHERE id=?)",Boolean.class,id));

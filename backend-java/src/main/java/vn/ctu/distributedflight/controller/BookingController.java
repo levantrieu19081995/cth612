@@ -7,8 +7,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,7 +27,7 @@ public class BookingController {
             @Parameter(description="Mã sân bay đến, ví dụ HAN") @RequestParam(required=false) String destination,
             @Parameter(description="Ngày khởi hành (yyyy-MM-dd), không dùng cùng month") @RequestParam(required=false) @DateTimeFormat(iso=DateTimeFormat.ISO.DATE) LocalDate date,
             @Parameter(description="Tháng khởi hành (yyyy-MM), không dùng cùng date") @RequestParam(required=false) @DateTimeFormat(pattern="yyyy-MM") YearMonth month,
-            @Parameter(description="Số ghế cần có, từ 1 đến 9") @RequestParam(defaultValue="1") @Min(1) @Max(9) int requiredSeats) {
+            @Parameter(description="Số ghế cần có, từ 1 đến 9") @RequestParam(defaultValue="1") int requiredSeats) {
         if(requiredSeats<1||requiredSeats>9) throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_PARTY_SIZE","Số ghế yêu cầu phải từ 1 đến 9.");
         if(date!=null&&month!=null) throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_DATE_FILTER","Chỉ được tìm theo ngày hoặc theo tháng.");
         return service.flights(origin,destination,date,month,requiredSeats);
