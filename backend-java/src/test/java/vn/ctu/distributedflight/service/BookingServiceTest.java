@@ -28,7 +28,7 @@ class BookingServiceTest {
         request=new CreateBooking(flight,seat,"Test Passenger","test@example.com",new Payment(new BigDecimal("1500000"),"VND"));
         when(repository.flightExists(flight)).thenReturn(true);
         when(repository.flightBookable(flight)).thenReturn(true);
-        when(repository.lockSeat(flight,seat)).thenReturn(Optional.of(new Seat(seat,"01A","ECONOMY","AVAILABLE")));
+        when(repository.lockSeat(flight,seat)).thenReturn(Optional.of(new Seat(seat,"03B","ECONOMY","AVAILABLE")));
         when(repository.reserve(flight,seat)).thenReturn(true);
         when(repository.booking(any())).thenReturn(Optional.of(new Booking(UUID.randomUUID(),"BK-TEST",flight,"TEST",seat,"01A",
             "Test Passenger","test@example.com","CONFIRMED",Instant.now(),new BigDecimal("1500000"),"VND")));
@@ -37,12 +37,33 @@ class BookingServiceTest {
         when(repository.lockSeat(flight,seat)).thenReturn(Optional.of(new Seat(seat,"01A","ECONOMY","BOOKED")));
         ApiException ex=assertThrows(ApiException.class,()->service.create(request));
         assertEquals("SEAT_ALREADY_BOOKED",ex.code());
-        verify(repository,never()).insertBooking(any(),anyString(),any(),any());
+        verify(repository,never()).insertBooking(any(),anyString(),any(),any(),any());
         verify(manager).rollback(any()); verify(manager,never()).commit(any());
     }
-    @Test void alteredFareIsRejectedBeforeOpeningTransaction() {
+    @Test void alteredFareIsRejectedByServerPriceCalculation() {
         CreateBooking wrong=new CreateBooking(flight,seat,"Passenger","p@example.com",new Payment(BigDecimal.ONE,"VND"));
         assertEquals("INVALID_PAYMENT",assertThrows(ApiException.class,()->service.create(wrong)).code());
+        verify(manager).rollback(any());
+        verify(repository,never()).insertBooking(any(),anyString(),any(),any(),any());
+    }
+    @Test void selectedAddonsAreIncludedInServerCalculatedPrice() {
+        when(repository.lockSeat(flight,seat)).thenReturn(Optional.of(new Seat(seat,"01A","ECONOMY","AVAILABLE")));
+        CreateBooking withAddons=new CreateBooking(flight,seat,"Passenger","p@example.com",
+            new Payment(new BigDecimal("1840000"),"VND"),null,15,"CHICKEN");
+        assertEquals("CONFIRMED",service.create(withAddons).status());
+        verify(repository).insertBooking(any(),anyString(),eq(withAddons),eq(new BigDecimal("100000")),any());
+        verify(repository).insertPayment(any(),eq(withAddons),any());
+    }
+    @Test void childFareIsValidatedOnTheServer() {
+        CreateBooking child=new CreateBooking(flight,seat,"Child passenger","child@example.com",
+            new Payment(new BigDecimal("1125000"),"VND"),null,null,null,"CHILD");
+        assertEquals("CONFIRMED",service.create(child).status());
+        verify(repository).insertPayment(any(),eq(child),any());
+    }
+    @Test void unsupportedBaggageOptionIsRejected() {
+        CreateBooking invalid=new CreateBooking(flight,seat,"Passenger","p@example.com",
+            new Payment(new BigDecimal("1500000"),"VND"),null,18,null);
+        assertEquals("INVALID_ANCILLARY",assertThrows(ApiException.class,()->service.create(invalid)).code());
         verifyNoInteractions(manager);
     }
     @Test void outboxFailureRollsBackAndDoesNotCommit() {

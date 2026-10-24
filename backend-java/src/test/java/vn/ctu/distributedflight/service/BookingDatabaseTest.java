@@ -35,7 +35,7 @@ class BookingDatabaseTest {
             INSERT INTO flights(id,flight_no,origin_airport_id,destination_airport_id,departure_time,arrival_time,status)
             VALUES (?,'TEST',?,?,?,?,'SCHEDULED')
             """,flight,origin,destination,Timestamp.from(Instant.now().plusSeconds(86400)),Timestamp.from(Instant.now().plusSeconds(93600)));
-        jdbc.update("INSERT INTO flight_seats(id,flight_id,seat_no,cabin_class,status) VALUES (?,?,'01A','ECONOMY','AVAILABLE')",seat,flight);
+        jdbc.update("INSERT INTO flight_seats(id,flight_id,seat_no,cabin_class,status) VALUES (?,?,'03B','ECONOMY','AVAILABLE')",seat,flight);
     }
     private CreateBooking request(String name) {
         return new CreateBooking(flight,seat,name,"test@example.com",new Payment(new BigDecimal("1500000"),"VND"));

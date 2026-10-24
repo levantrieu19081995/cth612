@@ -20,7 +20,7 @@ export interface AnalyticsSummary {
   business:{bookings:number;confirmed:number;payments:number;demoRevenue:number;flights:number;availableSeats:number};
   outbox:OutboxStats;eventsToday:number|null;eventStoreStatus:string;eventDateUtc:string;observedAt:string;
 }
-export interface Timeline {
+export interface TimelineType {
   events:{eventId:string;eventType:string;bookingId:string;occurredAt:string;payloadVersion:number;payload:unknown}[];
   pendingEvents:number;synchronizedEvents:boolean;observedAt:string;
 }

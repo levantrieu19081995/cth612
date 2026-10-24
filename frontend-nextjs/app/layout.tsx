@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Be_Vietnam_Pro } from "next/font/google";
+import "./globals.css";
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
-import "./globals.css";
 import Providers from "../components/Providers";
 import SiteNav from "../components/SiteNav";
 import { Metadata } from "next";
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="vi">
-      <body className={beVietnamPro.variable}>
+      <body className={`${beVietnamPro.className} ${beVietnamPro.variable}`}>
         <Providers>
           <main className="app-shell">
             <header className="site-header">

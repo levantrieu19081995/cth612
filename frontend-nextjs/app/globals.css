@@ -1,23 +1,23 @@
 :root {
-  --palette-ink: #293b35;
-  --palette-muted: #66736c;
-  --palette-forest: #426457;
-  --palette-sage: #a9b8aa;
-  --palette-paper: #f5f2e9;
-  --palette-clay: #b86b50;
+  --palette-ink: #081c15;
+  --palette-muted: #2d6a4f;
+  --palette-forest: #2d6a4f;
+  --palette-sage: #95d5b2;
+  --palette-paper: #f7fff8;
+  --palette-clay: #40916c;
   --ui-ink: var(--palette-ink);
   --ui-muted: var(--palette-muted);
   --ui-primary: var(--palette-forest);
-  --ui-primary-hover: #344f43;
-  --ui-tint: #e7ece4;
-  --ui-border: #d4dcd2;
+  --ui-primary-hover: #1b4332;
+  --ui-tint: #d8f3dc;
+  --ui-border: #b7e4c7;
   --ui-accent: var(--palette-clay);
-  --ui-accent-tint: #f1e4d9;
+  --ui-accent-tint: #e9f7ec;
   --ui-gradient-hero: var(--palette-paper);
-  --ui-gradient-surface: #fbfaf6;
+  --ui-gradient-surface: #ffffff;
   --ui-gradient-action: var(--palette-forest);
-  --ui-gradient-action-hover: #344f43;
-  --ui-shadow: 0 6px 18px #293b3510;
+  --ui-gradient-action-hover: #1b4332;
+  --ui-shadow: 0 4px 14px #081c150a;
   font-family: var(--font-be-vietnam-pro), Arial, Helvetica, sans-serif;
   font-size: 16px;
   color: var(--palette-ink);
@@ -1975,7 +1975,8 @@ body {
 
 .booking-flight-card-selected {
   border-color: var(--ui-primary) !important;
-  background: #ecf9f6 !important;
+  background: #f4fbfd !important;
+  color: #263746;
   box-shadow: inset 0 0 0 1px var(--ui-primary), 0 8px 20px #146d6014;
 }
 
@@ -3202,6 +3203,351 @@ tbody tr:hover {
   }
 }
 
+:root {
+  --palette-blue-0: #e7f5ff;
+  --palette-blue-2: #a5d8ff;
+  --palette-blue-5: #339af0;
+  --palette-blue-6: #228be6;
+  --palette-teal-0: #e6fcf5;
+  --palette-teal-5: #20c997;
+  --palette-amber-0: #fff9db;
+  --palette-amber-5: #fcc419;
+  --palette-neutral: #f8faf9;
+}
+
+body {
+  background: linear-gradient(135deg, #f8faf9 0%, #f2f8fb 52%, #f7fff8 100%);
+}
+
+.home-hero,
+.booking-page-shell .booking-hero {
+  background: linear-gradient(120deg, #d8f3dc 0%, #e6fcf5 48%, #e7f5ff 100%);
+}
+
+.booking-page-shell .booking-fare-includes {
+  border-color: #a5d8ff;
+  background: linear-gradient(115deg, #e7f5ff 0%, #f4fbff 55%, #e6fcf5 100%);
+}
+
+.booking-page-shell .booking-seat-map,
+.booking-page-shell .booking-flight-summary {
+  background: linear-gradient(115deg, #f4fbff 0%, #e7f5ff 100%);
+}
+
+.booking-page-shell .booking-flight-card-selected {
+  background: linear-gradient(120deg, #d8f3dc 0%, #e6fcf5 52%, #e7f5ff 100%) !important;
+}
+
+.header-cta,
+.primary-link,
+.hero-actions .primary-link,
+.app-shell button:not([class*="mantine-"]),
+.booking-page-shell .booking-search-submit,
+.booking-page-shell .booking-confirm-button,
+.booking-page-shell .booking-success a {
+  background: linear-gradient(115deg, #2d6a4f 0%, #228be6 100%);
+}
+
+.header-cta:hover,
+.primary-link:hover,
+.hero-actions .primary-link:hover,
+.app-shell button:not([class*="mantine-"]):hover:not(:disabled),
+.booking-page-shell .booking-search-submit:hover:not(:disabled),
+.booking-page-shell .booking-confirm-button:hover:not(:disabled),
+.booking-page-shell .booking-success a:hover {
+  background: linear-gradient(115deg, #1b4332 0%, #1864ab 100%);
+}
+
+.home-eyebrow,
+.journey-spark,
+.destination-arrow,
+.destination-action,
+.destination-number,
+.eyebrow-mark,
+.booking-page-shell .booking-ticket-flight-line {
+  color: #228be6;
+}
+
+.booking-page-shell .booking-ticket-flight-line > .mantine-Box-root {
+  border-color: #74c0fc;
+}
+
+.booking-page-shell .booking-price-details > summary {
+  color: #1971c2;
+}
+
+.booking-page-shell .booking-price-details-icon {
+  border-color: #74c0fc;
+}
+
+.booking-page-shell .booking-search-card .mantine-ThemeIcon-root {
+  background: linear-gradient(145deg, #339af0 0%, #228be6 100%);
+}
+
+.booking-page-shell .booking-total-card {
+  border-color: #ffe066;
+  background: linear-gradient(120deg, #fff9db 0%, #fffdf0 58%, #f8faf9 100%);
+}
+
+:root {
+  --palette-ink: #102044;
+  --palette-muted: #617391;
+  --palette-blue-0: #f1f7ff;
+  --palette-blue-1: #dceaff;
+  --palette-blue-2: #a9ccff;
+  --palette-blue-5: #357cf4;
+  --palette-blue-6: #1769e0;
+  --palette-blue-7: #0d55c7;
+  --palette-teal-0: #e9f8f4;
+  --palette-teal-5: #159b78;
+  --palette-amber-0: #fff5df;
+  --palette-amber-5: #e89017;
+  --ui-ink: #102044;
+  --ui-muted: #617391;
+  --ui-primary: #1769e0;
+  --ui-primary-hover: #0d55c7;
+  --ui-tint: #f1f7ff;
+  --ui-border: #dce6f2;
+  --ui-accent: #159b78;
+  --ui-accent-tint: #e9f8f4;
+  --ui-gradient-hero: #eaf4ff;
+  --ui-gradient-action: #1769e0;
+  --ui-gradient-action-hover: #0d55c7;
+  color: #102044;
+  background: #f5f9ff;
+}
+
+body,
+.app-shell,
+.home-page,
+.booking-page-shell {
+  color: #102044;
+  background: linear-gradient(145deg, #f8fbff 0%, #eff6ff 55%, #f7fbff 100%);
+}
+
+.site-header {
+  border-color: #dce6f2;
+}
+
+.site-brand strong,
+.site-brand small,
+.site-nav a,
+.muted,
+small,
+.booking-page-shell .booking-ticket-footer,
+.booking-page-shell .booking-price-breakdown .mantine-Text-root:first-child {
+  color: #617391;
+}
+
+.site-nav a:hover,
+.site-nav a:focus-visible,
+.site-nav a[aria-current="page"] {
+  color: #1457c5;
+  background: #eaf2ff;
+}
+
+.brand-mark {
+  background: #1769e0;
+}
+
+.header-cta,
+.primary-link,
+.hero-actions .primary-link,
+.app-shell button:not([class*="mantine-"]),
+.booking-page-shell .booking-search-submit,
+.booking-page-shell .booking-confirm-button,
+.booking-page-shell .booking-success a {
+  border-color: #1769e0;
+  color: #ffffff;
+  background: linear-gradient(115deg, #287af2 0%, #0758dc 100%);
+  box-shadow: 0 5px 14px #1769e026;
+}
+
+.header-cta:hover,
+.primary-link:hover,
+.hero-actions .primary-link:hover,
+.app-shell button:not([class*="mantine-"]):hover:not(:disabled),
+.booking-page-shell .booking-search-submit:hover:not(:disabled),
+.booking-page-shell .booking-confirm-button:hover:not(:disabled),
+.booking-page-shell .booking-success a:hover {
+  border-color: #0d55c7;
+  background: linear-gradient(115deg, #1769e0 0%, #1049b5 100%);
+}
+
+.home-hero,
+.booking-page-shell .booking-hero {
+  border-color: #bfdbfe;
+  color: #102044;
+  background:
+    radial-gradient(ellipse at 77% 30%, #ffffffa8 0 10%, transparent 36%),
+    radial-gradient(ellipse at 90% 85%, #cbe6ffb3 0 16%, transparent 43%),
+    linear-gradient(112deg, #e5f2ff 0%, #cfe6ff 48%, #8bc6f7 100%);
+  box-shadow: 0 10px 28px #1769e014;
+}
+
+.home-hero .hero-copy h1,
+.home-hero .hero-copy h1 span,
+.home-hero .hero-description,
+.home-hero .hero-footnote,
+.booking-page-shell .booking-hero .mantine-Title-root,
+.booking-page-shell .booking-hero .mantine-Text-root,
+.journey-card h2,
+.journey-steps strong,
+.destination-card h3,
+.section-heading h2,
+.booking-page-shell .booking-panel-heading h2,
+.booking-page-shell .booking-ticket-time,
+.booking-page-shell .booking-ticket-code,
+.booking-page-shell .booking-flight-summary,
+.booking-page-shell .booking-passenger-card {
+  color: #102044;
+}
+
+.home-hero .hero-copy h1 span,
+.home-hero .home-eyebrow,
+.journey-label,
+.booking-page-shell .booking-section-kicker,
+.booking-page-shell .booking-ticket-price,
+.booking-page-shell .booking-price-details > summary {
+  color: #1769e0;
+}
+
+.journey-card,
+.destination-card,
+.card,
+.table-wrap,
+.booking-page-shell .booking-flight-card,
+.booking-page-shell .booking-confirmed-ticket,
+.booking-page-shell .booking-stepper-card,
+.booking-page-shell .booking-search-card,
+.booking-page-shell .booking-panel,
+.booking-page-shell .booking-addon-option,
+.booking-page-shell .booking-fare-includes {
+  border-color: #dce6f2;
+  color: #102044;
+  background-color: #ffffff;
+  box-shadow: 0 5px 16px #294d7a0d;
+}
+
+.booking-page-shell .booking-demo-alert {
+  border-color: #ffd88a;
+  color: #68430a;
+  background: #fff7e8;
+}
+
+.booking-page-shell .booking-progress .mantine-Stepper-stepIcon {
+  border-color: #cbd6e5;
+  color: #617391;
+  background: #cbd6e5;
+}
+
+.booking-page-shell .booking-progress .mantine-Stepper-step[data-progress] .mantine-Stepper-stepIcon,
+.booking-page-shell .booking-search-card .mantine-ThemeIcon-root,
+.booking-page-shell .booking-flight-card .mantine-ThemeIcon-root,
+.booking-page-shell .booking-seat-button-selected {
+  border-color: #1769e0;
+  color: #ffffff;
+  background: linear-gradient(145deg, #357cf4 0%, #1769e0 100%);
+}
+
+.booking-page-shell .booking-progress .mantine-Stepper-separator {
+  background: #c7d9f2;
+}
+
+.booking-page-shell .booking-flight-card {
+  border-radius: 9px !important;
+  background: #ffffff !important;
+}
+
+.booking-page-shell .booking-flight-card::before {
+  background: #1769e0;
+}
+
+.booking-page-shell .booking-flight-card-selected {
+  border-color: #55a4ff !important;
+  color: #102044 !important;
+  background: linear-gradient(120deg, #ffffff 0%, #f0f7ff 65%, #e5f2ff 100%) !important;
+  box-shadow: inset 0 0 0 1px #55a4ff, 0 6px 18px #1769e01c;
+}
+
+.booking-page-shell .booking-ticket-heading {
+  border-color: #dce6f2;
+}
+
+.booking-page-shell .booking-ticket-flight-line {
+  color: #1769e0 !important;
+}
+
+.booking-page-shell .booking-ticket-flight-line > .mantine-Box-root,
+.booking-page-shell .booking-ticket-divider {
+  border-color: #a9ccff;
+}
+
+.booking-page-shell .booking-seat-map,
+.booking-page-shell .booking-flight-summary,
+.booking-page-shell .booking-passenger-card {
+  border-color: #dce6f2;
+  background: linear-gradient(135deg, #f7fbff 0%, #edf6ff 100%);
+}
+
+.booking-page-shell .booking-fare-includes {
+  border-color: #c8e9e1;
+  background: linear-gradient(115deg, #f1f9ff 0%, #f8fbff 55%, #effaf6 100%);
+}
+
+.booking-page-shell .booking-total-card {
+  border-color: #c8e9e1;
+  background: linear-gradient(120deg, #f1f9ff 0%, #f6fbff 55%, #effaf6 100%);
+}
+
+.booking-page-shell .booking-seat-button-available {
+  border-color: #b9dfcd;
+  color: #146c4c;
+  background: #eaf8f0;
+}
+
+.booking-page-shell .booking-seat-button-selected {
+  border-color: #1769e0;
+  color: #ffffff;
+  background: linear-gradient(145deg, #357cf4 0%, #1769e0 100%);
+}
+
+.booking-page-shell .booking-addon-option:hover,
+.booking-page-shell .booking-flight-card:hover:not(:disabled) {
+  border-color: #8bbcff !important;
+  box-shadow: 0 8px 22px #1769e018;
+}
+
+.booking-page-shell .mantine-Input-input:focus,
+.booking-page-shell .mantine-Select-input:focus {
+  border-color: #1769e0;
+  box-shadow: 0 0 0 2px #1769e022;
+}
+
+:where(a, button, input, select, summary):focus-visible {
+  outline-color: #1769e0;
+}
+
+@media (min-width: 992px) {
+  .booking-page-shell .booking-seat-panel {
+    position: sticky;
+    top: 16px;
+    align-self: start;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .booking-page-shell .booking-seat-panel {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
 /* Restrained warm-neutral theme shared across the application. */
 :root {
   color-scheme: light;
@@ -3209,33 +3555,33 @@ tbody tr:hover {
   --ui-muted: #66736c;
   --ui-primary: #426457;
   --ui-primary-hover: #344f43;
-  --ui-tint: #e7ece4;
-  --ui-border: #d4dcd2;
+  --ui-tint: #eef3ec;
+  --ui-border: #dbe3d9;
   --ui-accent: #b86b50;
-  --ui-accent-tint: #f1e4d9;
-  --ui-gradient-hero: #f5f2e9;
-  --ui-gradient-surface: #fbfaf6;
+  --ui-accent-tint: #f7efe6;
+  --ui-gradient-hero: #eef3ec;
+  --ui-gradient-surface: #ffffff;
   --ui-gradient-action: #426457;
   --ui-gradient-action-hover: #344f43;
-  --ui-shadow: 0 4px 14px #293b350f;
+  --ui-shadow: 0 4px 14px #293b350a;
   color: #293b35;
-  background: #f5f2e9;
+  background: #fffefb;
 }
 
 body {
   color: #293b35;
-  background: #f5f2e9;
+  background: #fffefb;
 }
 
 .app-shell,
 .home-page,
 .booking-page-shell {
   color: #293b35;
-  background: #f5f2e9;
+  background: #fffefb;
 }
 
 .site-header {
-  border-color: #d4dcd2;
+  border-color: #dbe3d9;
 }
 
 .site-brand strong,
@@ -3250,7 +3596,7 @@ small {
 .site-nav a:focus-visible,
 .site-nav a[aria-current="page"] {
   color: #344f43;
-  background: #e7ece4;
+  background: #eef3ec;
   box-shadow: none;
 }
 
@@ -3267,7 +3613,7 @@ small {
 .booking-page-shell .booking-confirm-button,
 .booking-page-shell .booking-success a {
   border-color: #426457;
-  color: #fbfaf6;
+  color: #ffffff;
   background: #426457;
   box-shadow: none;
 }
@@ -3280,7 +3626,7 @@ small {
 .booking-page-shell .booking-confirm-button:hover:not(:disabled),
 .booking-page-shell .booking-success a:hover {
   border-color: #344f43;
-  color: #fbfaf6;
+  color: #ffffff;
   background: #344f43;
   box-shadow: none;
   transform: none;
@@ -3288,10 +3634,10 @@ small {
 
 .home-hero,
 .booking-page-shell .booking-hero {
-  border-color: #d4dcd2;
+  border-color: #dbe3d9;
   border-radius: 16px;
   color: #293b35;
-  background: #e7ece4;
+  background: #eef3ec;
   box-shadow: none;
 }
 
@@ -3325,10 +3671,10 @@ small {
 .booking-page-shell .booking-panel,
 .booking-page-shell .booking-addon-option,
 .booking-page-shell .booking-fare-includes {
-  border-color: #d4dcd2;
+  border-color: #dbe3d9;
   border-radius: 12px;
   color: #293b35;
-  background: #fbfaf6;
+  background: #ffffff;
   box-shadow: 0 3px 10px #293b350a;
 }
 
@@ -3345,9 +3691,9 @@ small {
 .destination-card-featured,
 .journey-steps li,
 .booking-page-shell .booking-flight-card-selected {
-  border-color: #a9b8aa;
+  border-color: #c7d4c7;
   color: #293b35;
-  background: #e7ece4;
+  background: #f0f5ee;
 }
 
 .destination-card:hover,
@@ -3370,13 +3716,13 @@ small {
 .booking-page-shell .booking-flight-card::before,
 .booking-page-shell .booking-confirmed-ticket::before {
   border-color: #426457;
-  color: #fbfaf6;
+  color: #ffffff;
   background: #426457;
 }
 
 .route-line,
 .booking-page-shell .booking-ticket-flight-line > .mantine-Box-root {
-  border-color: #a9b8aa;
+  border-color: #c7d4c7;
 }
 
 .secondary-link,
@@ -3387,22 +3733,22 @@ small {
   border-color: #d4dcd2;
   border-radius: 10px;
   color: #293b35;
-  background: #f1e4d9;
+  background: #f7efe6;
 }
 
 .table-wrap th {
   color: #293b35;
-  background: #e7ece4;
+  background: #eef3ec;
 }
 
 .table-wrap td,
 .table-wrap th,
 .monitor-table tbody th {
-  border-color: #d4dcd2;
+  border-color: #dbe3d9;
 }
 
 .table-wrap tbody tr:hover {
-  background: #f1e4d9;
+  background: #f7efe6;
 }
 
 .badge.online,
@@ -3411,9 +3757,9 @@ small {
 .alert.success,
 .monitor-status-banner.success,
 .service-state.online {
-  border-color: #a9b8aa;
+  border-color: #c7d4c7;
   color: #293b35;
-  background: #e7ece4;
+  background: #eef3ec;
 }
 
 .badge.offline,
@@ -3423,46 +3769,46 @@ small {
 .alert.error,
 .monitor-status-banner.error,
 .service-state.offline {
-  border-color: #b86b50;
-  color: #653f32;
-  background: #f1e4d9;
+  border-color: #d9b6a7;
+  color: #704a3d;
+  background: #f7efe6;
 }
 
 .badge.unknown,
 .unknown,
 .service-state.unknown {
-  border-color: #d4dcd2;
+  border-color: #dbe3d9;
   color: #66736c;
-  background: #fbfaf6;
+  background: #ffffff;
 }
 
 .machine-panel {
-  border-color: #426457;
+  border-color: #dbe3d9;
   border-radius: 12px;
-  color: #f5f2e9;
-  background: #426457;
+  color: #293b35;
+  background: #eef3ec;
   box-shadow: none;
 }
 
 .machine-tile,
 .machine-tile.unknown {
-  border-color: #a9b8aa;
+  border-color: #dbe3d9;
   border-radius: 10px;
   color: #293b35;
-  background: #fbfaf6;
+  background: #ffffff;
 }
 
 .machine-tile.reachable {
-  border-color: #a9b8aa;
+  border-color: #c7d4c7;
   color: #293b35;
-  background: #e7ece4;
+  background: #eef3ec;
   box-shadow: none;
 }
 
 .machine-tile.unreachable {
-  border-color: #b86b50;
-  color: #653f32;
-  background: #f1e4d9;
+  border-color: #d9b6a7;
+  color: #704a3d;
+  background: #f7efe6;
 }
 
 .machine-tile :is(.machine-tile-top svg, .machine-state, .machine-role, .machine-ip span, .machine-ip code, .machine-service-count),
@@ -3471,11 +3817,11 @@ small {
 }
 
 .machine-panel :is(.matrix-counter, .matrix-heading p, .matrix-legend, .matrix-note, .machine-services summary) {
-  color: #e7ece4;
+  color: #52635a;
 }
 
 .led.reachable {
-  background: #a9b8aa;
+  background: #879b89;
   box-shadow: none;
 }
 
@@ -3492,16 +3838,16 @@ small {
 .booking-page-shell .booking-flight-card .mantine-ThemeIcon-root,
 .booking-page-shell .booking-seat-button-selected {
   border-color: #426457;
-  color: #fbfaf6;
+  color: #ffffff;
   background: #426457;
   box-shadow: none;
 }
 
 .booking-page-shell .booking-progress .mantine-Stepper-step[data-completed] .mantine-Stepper-stepIcon,
 .booking-page-shell .booking-seat-button-available {
-  border-color: #a9b8aa;
+  border-color: #c7d4c7;
   color: #293b35;
-  background: #e7ece4;
+  background: #eef3ec;
 }
 
 .booking-page-shell .booking-ticket-time,
@@ -3522,8 +3868,8 @@ small {
 .booking-page-shell .booking-flight-summary,
 .booking-page-shell .booking-passenger-card,
 .booking-page-shell .booking-fare-includes {
-  border-color: #d4dcd2;
-  background: #f1f3ed;
+  border-color: #dbe3d9;
+  background: #f5f7f2;
 }
 
 .booking-page-shell .mantine-Input-input:focus,
@@ -3539,9 +3885,9 @@ small {
 .booking-page-shell .booking-flight-card {
   position: relative;
   overflow: hidden;
-  border: 1px solid #d4dcd2 !important;
+  border: 1px solid #dbe3d9 !important;
   border-radius: 10px !important;
-  background: #fbfaf6 !important;
+  background: #ffffff !important;
   box-shadow: 0 2px 8px #293b350d;
 }
 
@@ -3551,14 +3897,15 @@ small {
 }
 
 .booking-page-shell .booking-flight-card-selected {
-  border-color: #426457 !important;
-  background: #f1f3ed !important;
-  box-shadow: inset 0 0 0 1px #426457;
+  border-color: #82b5c5 !important;
+  color: #263746 !important;
+  background: #f4fbfd !important;
+  box-shadow: inset 0 0 0 1px #39758e;
 }
 
 .booking-page-shell .booking-ticket-heading {
   padding-bottom: 10px;
-  border-bottom: 1px solid #d4dcd2;
+  border-bottom: 1px solid #dbe3d9;
 }
 
 .booking-page-shell .booking-ticket-route {
@@ -3603,9 +3950,9 @@ small {
   top: -8px;
   width: 15px;
   height: 15px;
-  border: 1px solid #d4dcd2;
+  border: 1px solid #dbe3d9;
   border-radius: 50%;
-  background: #f5f2e9;
+  background: #fffefb;
   content: "";
 }
 
@@ -3630,9 +3977,9 @@ small {
 .booking-page-shell .booking-confirmed-ticket {
   position: relative;
   overflow: hidden;
-  border: 1px solid #d4dcd2;
+  border: 1px solid #dbe3d9;
   border-radius: 10px;
-  background: #fbfaf6;
+  background: #ffffff;
   box-shadow: 0 3px 10px #293b3512;
 }
 
@@ -3663,7 +4010,7 @@ small {
 }
 
 .booking-page-shell .booking-price-details {
-  border-top: 1px solid #d4dcd2;
+  border-top: 1px solid #dbe3d9;
 }
 
 .booking-page-shell .booking-price-details > summary {
@@ -3688,7 +4035,7 @@ small {
   flex: 0 0 18px;
   width: 18px;
   height: 18px;
-  border: 1px solid #a9b8aa;
+  border: 1px solid #c7d4c7;
   border-radius: 50%;
 }
 
@@ -3722,4 +4069,476 @@ small {
 
 .booking-page-shell .booking-price-breakdown .mantine-Text-root:first-child {
   color: #66736c;
+}
+
+:root {
+  --palette-green-0: #d8f3dc;
+  --palette-green-1: #b7e4c7;
+  --palette-green-2: #95d5b2;
+  --palette-green-3: #74c69d;
+  --palette-green-4: #52b788;
+  --palette-green-5: #40916c;
+  --palette-green-6: #2d6a4f;
+  --palette-green-7: #1b4332;
+  --palette-green-8: #081c15;
+  --ui-ink: var(--palette-green-8);
+  --ui-muted: var(--palette-green-6);
+  --ui-primary: var(--palette-green-6);
+  --ui-primary-hover: var(--palette-green-7);
+  --ui-tint: var(--palette-green-0);
+  --ui-border: var(--palette-green-1);
+  --ui-accent: var(--palette-green-5);
+  --ui-accent-tint: #e9f7ec;
+  --ui-gradient-hero: var(--palette-green-0);
+  --ui-gradient-action: var(--palette-green-6);
+  --ui-gradient-action-hover: var(--palette-green-7);
+  color: var(--palette-green-8);
+  background-color: #f7fff8;
+}
+
+body,
+.app-shell,
+.home-page,
+.booking-page-shell {
+  color: var(--palette-green-8);
+  background-color: #f7fff8;
+}
+
+.site-header,
+.site-nav a:hover,
+.site-nav a:focus-visible,
+.site-nav a[aria-current="page"],
+.home-hero,
+.booking-page-shell .booking-hero,
+.machine-panel,
+.machine-tile.reachable,
+.table-wrap th {
+  border-color: var(--palette-green-1);
+}
+
+.site-brand strong,
+.site-brand small,
+.site-nav a,
+.muted,
+small,
+.booking-page-shell .booking-ticket-footer,
+.booking-page-shell .booking-price-breakdown .mantine-Text-root:first-child {
+  color: var(--palette-green-6);
+}
+
+.site-nav a:hover,
+.site-nav a:focus-visible,
+.site-nav a[aria-current="page"],
+.home-hero,
+.booking-page-shell .booking-hero,
+.machine-panel,
+.machine-tile.reachable,
+.booking-page-shell .booking-seat-map,
+.booking-page-shell .booking-flight-summary,
+.booking-page-shell .booking-passenger-card,
+.booking-page-shell .booking-fare-includes {
+  background-color: var(--palette-green-0);
+}
+
+.brand-mark,
+.header-cta,
+.primary-link,
+.hero-actions .primary-link,
+.app-shell button:not([class*="mantine-"]),
+.booking-page-shell .booking-search-submit,
+.booking-page-shell .booking-confirm-button,
+.booking-page-shell .booking-success a,
+.booking-page-shell .booking-flight-card .mantine-ThemeIcon-root,
+.booking-page-shell .booking-seat-button-selected,
+.booking-page-shell .booking-progress .mantine-Stepper-step[data-progress] .mantine-Stepper-stepIcon {
+  border-color: var(--palette-green-6);
+  background-color: var(--palette-green-6);
+}
+
+.header-cta:hover,
+.primary-link:hover,
+.hero-actions .primary-link:hover,
+.app-shell button:not([class*="mantine-"]):hover:not(:disabled),
+.booking-page-shell .booking-search-submit:hover:not(:disabled),
+.booking-page-shell .booking-confirm-button:hover:not(:disabled),
+.booking-page-shell .booking-success a:hover {
+  border-color: var(--palette-green-7);
+  background-color: var(--palette-green-7);
+}
+
+.home-hero,
+.booking-page-shell .booking-hero,
+.journey-card,
+.destination-card,
+.card,
+.table-wrap,
+.booking-page-shell .booking-flight-card,
+.booking-page-shell .booking-confirmed-ticket,
+.booking-page-shell .booking-stepper-card,
+.booking-page-shell .booking-search-card,
+.booking-page-shell .booking-panel,
+.booking-page-shell .booking-addon-option,
+.booking-page-shell .booking-fare-includes,
+.machine-tile,
+.machine-tile.unknown {
+  color: var(--palette-green-8);
+  border-color: var(--palette-green-1);
+}
+
+.home-hero .hero-copy h1,
+.home-hero .hero-copy h1 span,
+.home-hero .hero-description,
+.home-hero .hero-footnote,
+.home-hero .home-eyebrow,
+.booking-page-shell .booking-hero .mantine-Title-root,
+.booking-page-shell .booking-hero .mantine-Text-root,
+.journey-card h2,
+.journey-steps strong,
+.destination-card h3,
+.section-heading h2,
+.booking-page-shell .booking-panel-heading h2,
+.booking-page-shell .booking-ticket-time,
+.booking-page-shell .booking-ticket-code,
+.booking-page-shell .booking-flight-summary,
+.booking-page-shell .booking-passenger-card {
+  color: var(--palette-green-8);
+}
+
+.home-eyebrow,
+.journey-label,
+.booking-page-shell .booking-section-kicker,
+.journey-spark,
+.destination-arrow,
+.destination-action,
+.destination-number,
+.eyebrow-mark,
+.booking-page-shell .booking-ticket-price,
+.booking-page-shell .booking-price-details > summary {
+  color: var(--palette-green-6);
+}
+
+.booking-page-shell .booking-flight-card-selected {
+  border-color: var(--palette-green-3) !important;
+  color: var(--palette-green-8) !important;
+  background-color: var(--palette-green-0) !important;
+  box-shadow: inset 0 0 0 1px var(--palette-green-6);
+}
+
+.booking-page-shell .booking-flight-card::before,
+.booking-page-shell .booking-confirmed-ticket::before {
+  background-color: var(--palette-green-6);
+}
+
+.booking-page-shell .booking-ticket-divider,
+.booking-page-shell .booking-confirmed-ticket .mantine-Divider-root {
+  border-color: var(--palette-green-2);
+}
+
+.booking-page-shell .booking-ticket-heading,
+.booking-page-shell .booking-price-details {
+  border-color: var(--palette-green-1);
+}
+
+.booking-page-shell .booking-seat-map,
+.booking-page-shell .booking-flight-summary,
+.booking-page-shell .booking-passenger-card,
+.booking-page-shell .booking-fare-includes {
+  border-color: var(--palette-green-1);
+}
+
+.booking-page-shell .mantine-Input-input:focus,
+.booking-page-shell .mantine-Select-input:focus {
+  border-color: var(--palette-green-6);
+  box-shadow: 0 0 0 2px #2d6a4f20;
+}
+
+:where(a, button, input, select, summary):focus-visible {
+  outline-color: var(--palette-green-5);
+}
+
+body {
+  background: linear-gradient(135deg, #f7fff8 0%, #eef9f1 52%, #f7fff8 100%);
+  background-attachment: fixed;
+}
+
+.home-hero,
+.booking-page-shell .booking-hero {
+  background: linear-gradient(120deg, #d8f3dc 0%, #e9f8ef 54%, #f5fcf7 100%);
+}
+
+.header-cta,
+.primary-link,
+.hero-actions .primary-link,
+.app-shell button:not([class*="mantine-"]),
+.booking-page-shell .booking-search-submit,
+.booking-page-shell .booking-confirm-button,
+.booking-page-shell .booking-success a {
+  background: linear-gradient(115deg, #2d6a4f 0%, #1b4332 100%);
+  box-shadow: 0 5px 14px #1b433226;
+  transition: background .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.header-cta:hover,
+.primary-link:hover,
+.hero-actions .primary-link:hover,
+.app-shell button:not([class*="mantine-"]):hover:not(:disabled),
+.booking-page-shell .booking-search-submit:hover:not(:disabled),
+.booking-page-shell .booking-confirm-button:hover:not(:disabled),
+.booking-page-shell .booking-success a:hover {
+  background: linear-gradient(115deg, #1b4332 0%, #081c15 100%);
+  box-shadow: 0 7px 18px #1b433238;
+  transform: translateY(-1px);
+}
+
+.booking-page-shell .booking-flight-card {
+  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.booking-page-shell .booking-flight-card-selected {
+  background: linear-gradient(120deg, #d8f3dc 0%, #eef9f1 58%, #f7fff8 100%) !important;
+  box-shadow: inset 0 0 0 1px #2d6a4f, 0 8px 20px #2d6a4f18;
+}
+
+.booking-page-shell .booking-flight-card .mantine-ThemeIcon-root,
+.booking-page-shell .booking-seat-button-selected,
+.booking-page-shell .booking-progress .mantine-Stepper-step[data-progress] .mantine-Stepper-stepIcon {
+  background: linear-gradient(145deg, #40916c 0%, #2d6a4f 72%, #1b4332 100%);
+}
+
+.booking-page-shell .booking-flight-card:hover:not(:disabled) {
+  border-color: #52b788 !important;
+  box-shadow: 0 8px 22px #2d6a4f1c;
+}
+
+.booking-page-shell .booking-flight-card-selected .booking-ticket-heading {
+  border-color: #95d5b2;
+}
+
+.booking-page-shell .booking-ticket-price {
+  color: #1b4332 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-cta,
+  .primary-link,
+  .hero-actions .primary-link,
+  .app-shell button:not([class*="mantine-"]),
+  .booking-page-shell .booking-search-submit,
+  .booking-page-shell .booking-confirm-button,
+  .booking-page-shell .booking-success a,
+  .booking-page-shell .booking-flight-card {
+    transition: none;
+  }
+}
+
+:root {
+  --ui-ink: #102044;
+  --ui-muted: #617391;
+  --ui-primary: #1769e0;
+  --ui-primary-hover: #0d55c7;
+  --ui-tint: #f1f7ff;
+  --ui-border: #dce6f2;
+  --ui-accent: #159b78;
+  --ui-accent-tint: #e9f8f4;
+}
+
+body,
+.app-shell,
+.home-page,
+.booking-page-shell {
+  color: #102044;
+  background: linear-gradient(145deg, #f8fbff 0%, #eff6ff 55%, #f7fbff 100%);
+  background-attachment: fixed;
+}
+
+.site-header {
+  border-color: #dce6f2;
+}
+
+.site-brand strong,
+.site-brand small,
+.site-nav a,
+.muted,
+small,
+.booking-page-shell .booking-ticket-footer,
+.booking-page-shell .booking-price-breakdown .mantine-Text-root:first-child {
+  color: #617391;
+}
+
+.site-nav a:hover,
+.site-nav a:focus-visible,
+.site-nav a[aria-current="page"] {
+  color: #1457c5;
+  background: #eaf2ff;
+}
+
+.brand-mark {
+  background: #1769e0;
+}
+
+.header-cta,
+.primary-link,
+.hero-actions .primary-link,
+.app-shell button:not([class*="mantine-"]),
+.booking-page-shell .booking-search-submit,
+.booking-page-shell .booking-confirm-button,
+.booking-page-shell .booking-success a {
+  border-color: #1769e0;
+  color: #ffffff;
+  background: linear-gradient(115deg, #287af2 0%, #0758dc 100%);
+  box-shadow: 0 5px 14px #1769e026;
+}
+
+.header-cta:hover,
+.primary-link:hover,
+.hero-actions .primary-link:hover,
+.app-shell button:not([class*="mantine-"]):hover:not(:disabled),
+.booking-page-shell .booking-search-submit:hover:not(:disabled),
+.booking-page-shell .booking-confirm-button:hover:not(:disabled),
+.booking-page-shell .booking-success a:hover {
+  border-color: #0d55c7;
+  color: #ffffff;
+  background: linear-gradient(115deg, #1769e0 0%, #1049b5 100%);
+}
+
+.home-hero,
+.booking-page-shell .booking-hero {
+  border-color: #bfdbfe;
+  color: #102044;
+  background:
+    radial-gradient(ellipse at 77% 30%, #ffffffa8 0 10%, transparent 36%),
+    radial-gradient(ellipse at 90% 85%, #cbe6ffb3 0 16%, transparent 43%),
+    linear-gradient(112deg, #e5f2ff 0%, #cfe6ff 48%, #8bc6f7 100%);
+  box-shadow: 0 10px 28px #1769e014;
+}
+
+.home-hero .hero-copy h1,
+.home-hero .hero-copy h1 span,
+.home-hero .hero-description,
+.home-hero .hero-footnote,
+.booking-page-shell .booking-hero .mantine-Title-root,
+.booking-page-shell .booking-hero .mantine-Text-root,
+.journey-card h2,
+.journey-steps strong,
+.destination-card h3,
+.section-heading h2,
+.booking-page-shell .booking-panel-heading h2,
+.booking-page-shell .booking-ticket-time,
+.booking-page-shell .booking-ticket-code,
+.booking-page-shell .booking-flight-summary,
+.booking-page-shell .booking-passenger-card {
+  color: #102044;
+}
+
+.home-hero .hero-copy h1 span,
+.home-hero .home-eyebrow,
+.journey-label,
+.booking-page-shell .booking-section-kicker,
+.booking-page-shell .booking-ticket-price,
+.booking-page-shell .booking-price-details > summary {
+  color: #1769e0;
+}
+
+.journey-card,
+.destination-card,
+.card,
+.table-wrap,
+.booking-page-shell .booking-flight-card,
+.booking-page-shell .booking-confirmed-ticket,
+.booking-page-shell .booking-stepper-card,
+.booking-page-shell .booking-search-card,
+.booking-page-shell .booking-panel,
+.booking-page-shell .booking-addon-option,
+.booking-page-shell .booking-fare-includes {
+  border-color: #dce6f2;
+  color: #102044;
+  background-color: #ffffff;
+  box-shadow: 0 5px 16px #294d7a0d;
+}
+
+.booking-page-shell .booking-demo-alert {
+  border-color: #ffd88a;
+  color: #68430a;
+  background: #fff7e8;
+}
+
+.booking-page-shell .booking-progress .mantine-Stepper-step[data-progress] .mantine-Stepper-stepIcon,
+.booking-page-shell .booking-search-card .mantine-ThemeIcon-root,
+.booking-page-shell .booking-flight-card .mantine-ThemeIcon-root,
+.booking-page-shell .booking-seat-button-selected {
+  border-color: #1769e0;
+  color: #ffffff;
+  background: linear-gradient(145deg, #357cf4 0%, #1769e0 100%);
+}
+
+.booking-page-shell .booking-progress .mantine-Stepper-separator {
+  background: #c7d9f2;
+}
+
+.booking-page-shell .booking-flight-card {
+  border-radius: 9px !important;
+  background: #ffffff !important;
+  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.booking-page-shell .booking-flight-card::before {
+  background: #1769e0;
+}
+
+.booking-page-shell .booking-flight-card-selected {
+  border-color: #55a4ff !important;
+  color: #102044 !important;
+  background: linear-gradient(120deg, #ffffff 0%, #f0f7ff 65%, #e5f2ff 100%) !important;
+  box-shadow: inset 0 0 0 1px #55a4ff, 0 6px 18px #1769e01c;
+}
+
+.booking-page-shell .booking-flight-card:hover:not(:disabled) {
+  border-color: #8bbcff !important;
+  box-shadow: 0 8px 22px #1769e018;
+}
+
+.booking-page-shell .booking-ticket-heading {
+  border-color: #dce6f2;
+}
+
+.booking-page-shell .booking-ticket-flight-line {
+  color: #1769e0 !important;
+}
+
+.booking-page-shell .booking-ticket-flight-line > .mantine-Box-root,
+.booking-page-shell .booking-ticket-divider {
+  border-color: #a9ccff;
+}
+
+.booking-page-shell .booking-seat-map,
+.booking-page-shell .booking-flight-summary,
+.booking-page-shell .booking-passenger-card {
+  border-color: #dce6f2;
+  background: linear-gradient(135deg, #f7fbff 0%, #edf6ff 100%);
+}
+
+.booking-page-shell .booking-fare-includes {
+  border-color: #c8e9e1;
+  background: linear-gradient(115deg, #f1f9ff 0%, #f8fbff 55%, #effaf6 100%);
+}
+
+.booking-page-shell .booking-total-card {
+  border-color: #c8e9e1;
+  background: linear-gradient(120deg, #f1f9ff 0%, #f6fbff 55%, #effaf6 100%);
+}
+
+.booking-page-shell .booking-seat-button-available {
+  border-color: #b9dfcd;
+  color: #146c4c;
+  background: #eaf8f0;
+}
+
+.booking-page-shell .mantine-Input-input:focus,
+.booking-page-shell .mantine-Select-input:focus {
+  border-color: #1769e0;
+  box-shadow: 0 0 0 2px #1769e022;
+}
+
+:where(a, button, input, select, summary):focus-visible {
+  outline-color: #1769e0;
 }

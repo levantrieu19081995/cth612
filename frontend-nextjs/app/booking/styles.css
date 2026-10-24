@@ -1,0 +1,353 @@
+/* FLIGHT TICKET V2 — only the booking result cards.
+   Paste AFTER booking-reference.css, OR append at its very end.
+   Markup: FlightCard_TheoAnh_Replace.tsx.
+   Colors are scoped: other panels/theme are unchanged. */
+.booking-passenger-counter {
+    border-radius: 10px;
+    border: 1px solid #dce6f5 !important;
+    padding: 8px 16px;
+}
+
+.booking-page-shell.booking-reference .booking-flight-card.ticket-ref {
+    container: flight-ticket / inline-size;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 15px 16px 14px !important;
+    background: #ffffff !important;
+    border: 1px solid #dce6f5 !important;
+    border-left: 3px solid #2c77ef !important;
+    border-radius: 11px !important;
+    box-shadow: 0 2px 10px rgba(13, 49, 107, 0.035) !important;
+    text-align: left;
+    color: #10274b !important;
+    transition: background-color .18s, border-color .18s, box-shadow .18s, transform .18s;
+}
+
+.booking-page-shell.booking-reference .booking-flight-card.ticket-ref--vietjet {
+    border-left-color: #ff5f6d !important;
+}
+
+.booking-page-shell.booking-reference .booking-flight-card.ticket-ref--bamboo {
+    border-left-color: #27b67b !important;
+}
+
+.booking-page-shell.booking-reference .booking-flight-card.ticket-ref--vietravel {
+    border-left-color: #f5be39 !important;
+}
+
+.booking-page-shell.booking-reference .booking-flight-card.ticket-ref--selected {
+    border-color: #4996ff !important;
+    border-left-color: #1265e9 !important;
+    background: linear-gradient(110deg, #f1f7ff, #fff 92%) !important;
+    box-shadow: inset 0 0 0 1px #a8ccff, 0 6px 19px rgba(28, 95, 212, .10) !important;
+}
+
+.booking-page-shell.booking-reference .booking-flight-card.ticket-ref:hover:not(:disabled) {
+    border-color: #79aff6 !important;
+    box-shadow: 0 8px 19px rgba(23, 79, 164, .12) !important;
+    transform: translateY(-1px);
+}
+
+.booking-page-shell.booking-reference .ticket-ref__header {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    gap: 8px !important;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__mark {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    height: 29px;
+    min-width: 32px;
+    padding: 0 4px;
+    color: #dca621;
+    background: transparent;
+    font-size: 25px;
+    font-weight: 900;
+    letter-spacing: -.05em;
+    line-height: 1;
+}
+
+.booking-page-shell.booking-reference .ticket-ref--vietjet .ticket-ref__mark {
+    color: #ee2235;
+    background: #fff0f1;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.booking-page-shell.booking-reference .ticket-ref--bamboo .ticket-ref__mark {
+    color: #138d61;
+    background: #ecfcf3;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.booking-page-shell.booking-reference .ticket-ref--vietravel .ticket-ref__mark {
+    color: #1e67bd;
+    background: #fff6db;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__brand {
+    color: #12418f !important;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 15px;
+    font-weight: 850;
+    letter-spacing: -.03em;
+}
+
+.booking-page-shell.booking-reference .ticket-ref--vietjet .ticket-ref__brand {
+    color: #e82535 !important;
+    font-style: italic;
+}
+
+.booking-page-shell.booking-reference .ticket-ref--bamboo .ticket-ref__brand {
+    color: #078659 !important;
+}
+
+.booking-page-shell.booking-reference .ticket-ref--vietravel .ticket-ref__brand {
+    color: #145ca4 !important;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__number {
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 38%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #27416a !important;
+    font-size: 13px;
+    font-weight: 750;
+    margin-left: 12px;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__chevron {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 0 0 30px;
+    width: 30px;
+    height: 30px;
+    margin-left: auto;
+    background: #f9fbff;
+    border: 1px solid #e1e9f4;
+    border-radius: 8px;
+    color: #1a6aec;
+    transform: rotate(90deg);
+}
+
+.booking-page-shell.booking-reference .ticket-ref__main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(120px, 145px);
+    align-items: end;
+    gap: 13px;
+    margin-top: 10px;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__route {
+    display: grid;
+    grid-template-columns: minmax(0, .8fr) minmax(76px, 1.08fr) minmax(0, .8fr);
+    align-items: start;
+    gap: 6px;
+    min-width: 0;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__airport {
+    min-width: 0;
+    align-items: flex-start;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__airport--arrival {
+    align-items: flex-end;
+    text-align: right;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__time {
+    color: #0d244d !important;
+    font-size: clamp(19px, 1.7vw, 23px) !important;
+    font-weight: 850;
+    line-height: 1.14;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.02em;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__iata {
+    color: #22385e !important;
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: .01em;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__city {
+    color: #6580ac !important;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__track {
+    min-width: 0;
+    color: #1264e8;
+    padding-top: 0;
+    align-self: center;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__duration {
+    color: #5a7cbb !important;
+    font-size: 12px;
+    font-weight: 650;
+    text-align: center;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__dash {
+    flex: 1;
+    min-width: 4px;
+    border-top: 1px dotted #2e7deb;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__direct {
+    font-size: 12px;
+    font-weight: 750;
+    color: #0d68ef !important;
+    white-space: nowrap;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__fare {
+    align-self: end;
+    min-width: 0;
+    padding-bottom: 1px;
+    text-align: right;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__amount {
+    color: #075ff4 !important;
+    font-size: clamp(19px, 1.7vw, 23px) !important;
+    font-weight: 850;
+    line-height: 1.14;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.035em;
+    white-space: nowrap;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__unit {
+    color: #7292c0 !important;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(120px, 145px);
+    align-items: end;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__details {
+    min-width: 0;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__date {
+    color: #6884ae !important;
+    font-size: 13px;
+    min-width: 0;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__date .mantine-Text-root {
+    font-size: 13px;
+    color: inherit !important;
+    white-space: nowrap;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__badges {
+    row-gap: 6px !important;
+    column-gap: 5px !important;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__badges .mantine-Badge-root {
+    min-height: 23px;
+    height: auto;
+    max-width: 100%;
+    padding: 3px 8px;
+    font-size: 12px;
+    line-height: 1.3;
+    font-weight: 750;
+    text-transform: none;
+    letter-spacing: 0;
+    border-radius: 6px;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__badges .mantine-Badge-label {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+.booking-page-shell.booking-reference .ticket-ref__cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 36px;
+    width: 100%;
+    padding: 8px 10px;
+    background: #0864f4;
+    color: white;
+    border: 1px solid #0864f4;
+    border-radius: 7px;
+    box-shadow: 0 5px 12px rgba(10, 88, 229, .14);
+    font-size: 12px;
+}
+
+.booking-page-shell.booking-reference .ticket-ref--selected .ticket-ref__cta {
+    color: #0960df;
+    background: #e5f1ff;
+    border-color: #b9d8ff;
+}
+
+.booking-page-shell.booking-reference .ticket-ref:disabled .ticket-ref__cta {
+    background: #93a3bb;
+    border-color: #93a3bb;
+    box-shadow: none;
+}
+
+/* Responsive to CARD width, not viewport — works in your 7/5 grid. */
+@container flight-ticket (max-width: 470px) {
+    .ticket-ref__main {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+
+    .ticket-ref__route {
+        grid-template-columns: minmax(0, .8fr) minmax(70px, 1.08fr) minmax(0, .8fr);
+    }
+
+    .ticket-ref__fare {
+        align-items: flex-start !important;
+        text-align: left !important;
+    }
+
+    .ticket-ref__footer {
+        grid-template-columns: 1fr !important;
+    }
+
+    .ticket-ref__cta {
+        justify-self: stretch;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .booking-page-shell.booking-reference .ticket-ref {
+        transition: none !important;
+        transform: none !important;
+    }
+}
