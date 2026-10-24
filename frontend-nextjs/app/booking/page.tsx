@@ -861,7 +861,7 @@ export default function BookingPage()
                   </Center>
                 ) : (
                   <Stack gap="sm">
-                    <Grid gutter={{ base: "md", lg: "lg" }} align="stretch">
+                    <Grid gap={{ base: "md", lg: "lg" }} align="stretch">
                       <Grid.Col span={{ base: 12, md: 7 }}>
                         <Group className="booking-list-heading" justify="space-between" align="center" gap="sm" mb="xs">
 

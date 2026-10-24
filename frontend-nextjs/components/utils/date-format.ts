@@ -158,7 +158,7 @@ export const convertBirthday = (date: any) => {
     return ` ${day ? day : "01"}/${month ? month : "01"}/${year}`;
 };
 
-const formatYear = (y) => {
+const formatYear = (y: string | number) => {
     y = String(y);
 
     if (y.length === 1) {
@@ -292,7 +292,7 @@ export function dateByHalf(half: number, year?: number, cauHinhChucNang?: any) {
             Number(cauHinhChucNang?.ngayBatDauBaoCao) ? Number(cauHinhChucNang?.ngayBatDauBaoCao) : 1,
         );
 
-    const halfEnd = halfEndTemp <= currentDate ? new Date(halfEndTemp - 1) : currentDate;
+    const halfEnd = halfEndTemp <= currentDate ? new Date(halfEndTemp.getTime() - 1) : currentDate;
     return { halfStart, halfEnd };
 }
 
