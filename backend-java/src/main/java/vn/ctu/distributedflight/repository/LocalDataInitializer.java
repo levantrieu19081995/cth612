@@ -29,17 +29,17 @@ public class LocalDataInitializer implements ApplicationRunner {
             airport("HAN","Nội Bài","Hà Nội");
             airport("DAD","Đà Nẵng","Đà Nẵng");
             airport("VCA","Cần Thơ","Cần Thơ");
-            flight("VN-DEMO-101","SGN","HAN",1,9);
-            flight("VN-DEMO-102","SGN","DAD",1,14);
-            flight("VN-DEMO-103","VCA","HAN",2,10);
-            flight("VN-DEMO-104","HAN","SGN",2,16);
+            flight("VN-DEMO-101","SGN","HAN",1,9,"VN","Vietnam Airlines");
+            flight("VN-DEMO-102","SGN","DAD",1,14,"VJ","VietJet Air");
+            flight("VN-DEMO-103","VCA","HAN",2,10,"QH","Bamboo Airways");
+            flight("VN-DEMO-104","HAN","SGN",2,16,"VN","Vietnam Airlines");
         });
     }
     private UUID id(String key) { return UUID.nameUUIDFromBytes(key.getBytes(StandardCharsets.UTF_8)); }
     private void airport(String code,String name,String city) {
         jdbc.update("INSERT INTO airports(id,code,name,city) VALUES (?,?,?,?) ON CONFLICT (id) DO NOTHING",id("airport:"+code),code,name,city);
     }
-    private void flight(String number,String origin,String destination,int day,int hour) {
+    private void flight(String number,String origin,String destination,int day,int hour,String airlineCode,String airlineName) {
         LocalDate departureDate=LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")).plusDays(day);
         String flightKey=number+":"+departureDate;
         UUID flightId=id("flight:"+flightKey);
@@ -50,6 +50,7 @@ public class LocalDataInitializer implements ApplicationRunner {
             VALUES (?,?,?,?,?,?,'SCHEDULED') ON CONFLICT (id) DO NOTHING
             """,flightId,number,id("airport:"+origin),id("airport:"+destination),
             Timestamp.from(departure),Timestamp.from(departure.plusSeconds(7200)));
+        jdbc.update("UPDATE flights SET airline_code=?,airline_name=? WHERE id=?",airlineCode,airlineName,flightId);
         // Stable IDs preserve existing bookings and seat states on restart.
         for(int row=1;row<=6;row++) for(char col='A';col<='F';col++) {
             String seat="%02d%c".formatted(row,col);

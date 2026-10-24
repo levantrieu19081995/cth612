@@ -156,7 +156,7 @@ const flightDate = (value: string) =>
   return `${part("year")}-${part("month")}-${part("day")}`;
 };
 
-export default function BookingPage()
+function BookingPageContent()
 {
   const { get, set } = useQueryFilters();
 
@@ -1481,4 +1481,12 @@ export default function BookingPage()
       </Container>
     </Box >
   )
+}
+
+export default function BookingPage() {
+  return (
+    <React.Suspense fallback={null}>
+      <BookingPageContent />
+    </React.Suspense>
+  );
 }

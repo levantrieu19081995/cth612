@@ -1,6 +1,7 @@
 package vn.ctu.distributedflight.dto;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
@@ -27,7 +28,16 @@ public final class BookingDtos {
                           }
     public record Flight(UUID flightId, String flightNo, String origin, String destination,
             String originCity, String destinationCity, Instant departureTime, Instant arrivalTime,
-            String status, long availableSeats, BigDecimal price, String currency, boolean sufficientSeats) {}
+            String status, long availableSeats, BigDecimal price, String currency, boolean sufficientSeats,
+            String airlineCode, String airlineName, List<CabinOffer> cabins,
+            List<PassengerFare> passengerFares, Ancillaries ancillaries) {}
+    public record CabinOffer(String cabinClass, long totalSeats, long availableSeats, BigDecimal surcharge,
+            BigDecimal adultFare, BigDecimal childFare) {}
+    public record PassengerFare(String passengerType, BigDecimal baseFare, boolean requiresSeat, boolean bookable) {}
+    public record BaggageOption(int kg, BigDecimal price) {}
+    public record MealOption(String code, BigDecimal price) {}
+    public record SeatFeeRule(String rule, BigDecimal price) {}
+    public record Ancillaries(List<BaggageOption> baggage, List<MealOption> meals, List<SeatFeeRule> seatFees) {}
     public record Seat(UUID seatId, String seatNo, String cabinClass, String status) {}
     public record Booking(UUID bookingId, String bookingCode, UUID flightId, String flightNo,
             UUID seatId, String seatNo, String passengerName, String passengerEmail,

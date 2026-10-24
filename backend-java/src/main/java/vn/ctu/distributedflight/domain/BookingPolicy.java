@@ -1,6 +1,8 @@
 package vn.ctu.distributedflight.domain;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
+import vn.ctu.distributedflight.dto.BookingDtos.*;
 
 public final class BookingPolicy {
     public static final BigDecimal DEMO_FARE = new BigDecimal("1500000.00");
@@ -15,7 +17,27 @@ public final class BookingPolicy {
         "SANDWICH", new BigDecimal("60000")
     );
 
+    public static final List<String> CABIN_CLASSES = List.of("ECONOMY", "PREMIUM_ECONOMY", "BUSINESS");
+
     private BookingPolicy() {}
+
+    public static Ancillaries ancillaries() {
+        return new Ancillaries(
+            BAGGAGE_PRICES.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                .map(e -> new BaggageOption(e.getKey(), e.getValue())).toList(),
+            MEAL_PRICES.entrySet().stream().sorted(Map.Entry.comparingByValue())
+                .map(e -> new MealOption(e.getKey(), e.getValue())).toList(),
+            List.of(new SeatFeeRule("Hàng 01", seatPrice("01C")),
+                new SeatFeeRule("Ghế A/F hàng khác", seatPrice("02A")),
+                new SeatFeeRule("Ghế còn lại", BigDecimal.ZERO)));
+    }
+
+    public static List<PassengerFare> passengerFares() {
+        return List.of(
+            new PassengerFare("ADULT", passengerBaseFare("ADULT"), true, true),
+            new PassengerFare("CHILD", passengerBaseFare("CHILD"), true, true),
+            new PassengerFare("INFANT", BigDecimal.ZERO, false, false));
+    }
 
     public static BigDecimal baggagePrice(Integer baggageKg) {
         if (baggageKg == null) return BigDecimal.ZERO;
