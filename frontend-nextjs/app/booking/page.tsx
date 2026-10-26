@@ -1,7 +1,6 @@
 "use client";
 
-import
-{
+import {
   ActionIcon,
   Alert,
   Badge,
@@ -28,8 +27,7 @@ import
   ThemeIcon,
   Title,
 } from "@mantine/core";
-import
-{
+import {
   IconAlertCircle,
   IconArrowRight,
   IconArmchair,
@@ -50,6 +48,9 @@ import
   IconCheckFilled,
   IconX,
   IconPlaneArrival,
+  IconExchange,
+  IconArrowsExchange2,
+  IconArrowDown,
 } from "@tabler/icons-react";
 
 import { DateInput, MonthPickerInput } from '@mantine/dates';
@@ -57,26 +58,21 @@ import 'dayjs/locale/vi';
 
 import React, { useEffect, useRef, useState, type FormEvent } from "react";
 import { ApiError, apiGet, apiPost } from "../../lib/api";
-import type { Flight, Seat, Booking, CreateBooking } from "../../types/booking";
+import type { Flight, Seat, Booking, CreateBooking, FlightBookingRequest } from "../../types/booking";
 import Link from "next/link";
 
 import { useForm } from "@mantine/form";
 import { __getTimChuyenBay } from "@/components/api/booking";
-import { dateFormater } from "@/components/utils/date-format";
-import { useParams, usePathname, useSearchParams } from "next/navigation";
+import { dateFormat, dateFormater } from "@/components/utils/date-format";
+
 import { useQueryFilters } from "@/components/utils/setURLParams";
 import "./styles.css";
+import { InfoRow } from "@/components/Share";
+import { flightDuration, getName, money } from "@/components/utils/func";
+import SectionThongTinKhachHang from "./SectionThongTinKhachHang";
+import SectionBookingSeat from "./SectionBookingSeat";
 
-const money = (value: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
-const time = (value: string) => new Date(value).toLocaleString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour12: false });
 
-const flightDuration = (departure: string, arrival: string) =>
-{
-  const totalMinutes = Math.max(0, Math.round((new Date(arrival).getTime() - new Date(departure).getTime()) / 60000));
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return [hours > 0 ? `${hours} giờ` : "", minutes > 0 ? `${minutes} phút` : ""].filter(Boolean).join(" ") || "Dưới 1 phút";
-};
 const baggageOptions = [
   { value: "15", label: "15 kg · 150.000đ" },
   { value: "20", label: "20 kg · 200.000đ" },
@@ -94,8 +90,7 @@ const mealLabels: Record<string, string> = {
   VEGETARIAN: "Suất chay",
   SANDWICH: "Sandwich",
 };
-const seatPrice = (seatNo: string) =>
-{
+const seatPrice = (seatNo: string) => {
   if (seatNo.startsWith("01")) return 100000;
   if (seatNo.endsWith("A") || seatNo.endsWith("F")) return 50000;
   return 0;
@@ -109,7 +104,7 @@ const airportOptions = [
   { value: "VCA", label: "Cần Thơ (VCA)" },
 ];
 
-type PassengerDraft = {
+export type PassengerDraft = {
   passengerType: "ADULT" | "CHILD";
   name: string;
   email: string;
@@ -137,15 +132,13 @@ const cabinPrices: Record<string, number> = {
   BUSINESS: 1000000,
 };
 
-const dateWithOffset = (date: string, offset: number) =>
-{
+const dateWithOffset = (date: string, offset: number) => {
   const [year, month, day] = date.split("-").map(Number);
   const adjusted = new Date(Date.UTC(year, month - 1, day + offset));
   return `${adjusted.getUTCFullYear()}-${String(adjusted.getUTCMonth() + 1).padStart(2, "0")}-${String(adjusted.getUTCDate()).padStart(2, "0")}`;
 };
 
-const flightDate = (value: string) =>
-{
+const flightDate = (value: string) => {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Ho_Chi_Minh",
     year: "numeric",
@@ -156,15 +149,15 @@ const flightDate = (value: string) =>
   return `${part("year")}-${part("month")}-${part("day")}`;
 };
 
-function BookingPageContent()
-{
+function BookingPageContent() {
   const { get, set } = useQueryFilters();
 
-  const origin = get("origin");
-  const destination = get("destination");
-  const date = get("date");
-  const month = get("month");
+  const origin = get("origin") ?? "";
+  const destination = get("destination") ?? "";
+  const date = get("date") ?? null;
+  const month = get("month") ?? null;
 
+  const [type, setType] = useState<"oneWay" | "roundTrip">("oneWay")
   const [flights, setFlights] = useState<Flight[]>([]);
   const [flight, setFlight] = useState<Flight | null>(null);
   const [seats, setSeats] = useState<Seat[]>([]);
@@ -204,22 +197,34 @@ function BookingPageContent()
 
   const [searchPeriod, setSearchPeriod] = useState<"day" | "month">(date ? "day" : "month");
 
-  const form = useForm<{
+  const searchForm = useForm<{
     origin: string | null;
     destination: string | null;
     date: string | null;
     month: string | null;
   }>({
     initialValues: {
-      origin: origin ?? "",
-      destination: destination ?? "",
+      origin: origin ?? null,
+      destination: destination ?? null,
       date: date ?? null,
       month: month ?? null,
     },
   })
 
-  function updatePartySize(adults: number, children: number, infants = Math.min(infantCount, adults))
-  {
+  const bookingForm = useForm<FlightBookingRequest>({
+    initialValues: {
+      flightIds: [],
+      contactEmail: "",
+      passengers: [],
+      payment: {
+        amount: 0,
+        currency: "VND",
+      },
+      requestId: crypto.randomUUID(),
+    },
+  })
+
+  function updatePartySize(adults: number, children: number, infants = Math.min(infantCount, adults)) {
     setAdultCount(adults);
     setChildCount(children);
     setInfantCount(infants);
@@ -241,8 +246,8 @@ function BookingPageContent()
   }
 
 
-  const handleSearchFlights = React.useCallback(async (values: typeof form.values) =>
-  {
+  const handleSearchFlights = React.useCallback(async (values: typeof searchForm.values) => {
+    if (!searchForm.values || !values.origin || !values.destination) return;
     set({
       origin: values.origin,
       destination: values.destination,
@@ -288,14 +293,30 @@ function BookingPageContent()
     }
   }, [origin, destination, date, month]);
 
-  useEffect(() =>
-  {
-    handleSearchFlights(form.values);
+  useEffect(() => {
+    handleSearchFlights(searchForm.values);
   }, [handleSearchFlights])
 
-  async function chooseFlight(item: Flight)
-  {
+  async function toggleChooseFlight(item: Flight) {
     const request = ++seatRequest.current;
+    if (flight?.flightId === item.flightId) {
+      setFlight(null);
+      setSeats([]);
+      setPassengers(current => current.map(passenger => ({
+        ...passenger,
+        seatId: null,
+      })));
+      setActivePassengerIndex(0);
+      setBaggageKg(null);
+      setMealCode(null);
+      setError("");
+      setSuggestedFlights([]);
+      setSuggestionError("");
+      setLoadingSeats(false);
+      setLoadingSuggestions(false);
+      return;
+    }
+
     setFlight(item);
     setSeats([]);
     setPassengers(current => Array.from({ length: requiredSeatCount }, (_, index) => current[index] ?? createPassenger(index < adultCount ? "ADULT" : "CHILD")));
@@ -326,7 +347,9 @@ function BookingPageContent()
     }
 
     if (request !== seatRequest.current || currentAvailability >= requiredSeatCount) return;
+
     const departureTime = new Date(item.departureTime).getTime();
+
     const sameDayOptions = flights
       .filter(candidate => candidate.flightId !== item.flightId &&
         candidate.origin === item.origin && candidate.destination === item.destination &&
@@ -342,6 +365,7 @@ function BookingPageContent()
     }
 
     setLoadingSuggestions(true);
+
     try {
       const date = flightDate(item.departureTime);
       const adjacentResults = await Promise.allSettled([-1, 1].map(offset =>
@@ -374,8 +398,7 @@ function BookingPageContent()
     }
   }
 
-  async function book(event: FormEvent<HTMLFormElement>)
-  {
+  async function book(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!flight || submitLock.current) return;
     const pendingPassengers = passengers
@@ -464,9 +487,6 @@ function BookingPageContent()
   const availableSeats = seats.filter(item => item.status === "AVAILABLE").length;
 
   return (
-    // THAY phần JSX hiện tại trong `return (...)` bằng nội dung bên dưới.
-    // Giữ nguyên toàn bộ state, hooks, các hàm xử lý và import của trang đang có.
-    // Import file booking-reference.css SAU stylesheet hiện tại. Ảnh: public/booking-hero-art.webp.
 
     <Box className="booking-page-shell booking-reference" mih="100vh" py={{ base: "md", md: "xl" }}>
       <Container size={1440}>
@@ -499,12 +519,12 @@ function BookingPageContent()
                 </Text>
                 <Group className="booking-hero-route-points" justify="space-between" align="center" wrap="nowrap" mt="lg">
                   <Stack gap={3}>
-                    <Text className="booking-hero-route-code">{form.values.origin || "ĐI"}</Text>
+                    <Text className="booking-hero-route-code">{searchForm.values.origin || "ĐI"}</Text>
                     <Text size="xs">Nơi khởi hành</Text>
                   </Stack>
                   <Box className="booking-hero-route-line"><IconPlane size={21} /></Box>
                   <Stack gap={3} ta="right">
-                    <Text className="booking-hero-route-code">{form.values.destination || "ĐẾN"}</Text>
+                    <Text className="booking-hero-route-code">{searchForm.values.destination || "ĐẾN"}</Text>
                     <Text size="xs">Điểm đến</Text>
                   </Stack>
                 </Group>
@@ -540,295 +560,328 @@ function BookingPageContent()
               <Stepper.Step label="Xác nhận" description="Nhận mã đặt vé" icon={<IconTicket size={19} />} />
             </Stepper>
           </Paper>
+
           {/* BỘ LỌC TÌM CHUYẾN */}
-          <Paper className="booking-search-card" withBorder radius="xl" p={{ base: "md", sm: "lg" }} shadow="xs">
-            <Stack gap="md">
-              <Group gap="sm" wrap="nowrap">
-                <ThemeIcon variant="filled" size={46} radius="lg" color="blue">
-                  <IconSearch size={22} />
-                </ThemeIcon>
-                <Box>
-                  <Text className="booking-section-kicker" size="xs" fw={800} tt="uppercase" lts={1}>01 · HÀNH TRÌNH</Text>
-                  <Title order={2} size="lg">Tìm chuyến bay</Title>
-                  <Text c="dimmed" size="sm">Lọc theo điểm đi, điểm đến và ngày hoặc tháng khởi hành.</Text>
-                </Box>
-              </Group>
-              <Stack gap="md">
+
+          <Paper
+            className="booking-search-card"
+            withBorder
+            radius="xl"
+            shadow="sm"
+            p={{ base: "md", sm: "xl" }}
+            style={{ borderColor: "var(--mantine-color-gray-2)", overflow: "hidden" }}
+          >
+            <Stack gap="lg">
+              {/* Tiêu đề và chế độ tìm kiếm */}
+              <Flex
+                direction={{ base: "column", md: "row" }}
+                align={{ base: "stretch", md: "center" }}
+                gap="md"
+              >
+                <Group gap="md" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+                  <ThemeIcon size={50} radius="lg" variant="light" color="blue">
+                    <IconSearch size={26} />
+                  </ThemeIcon>
+                  <Box style={{ minWidth: 0 }}>
+                    <Title order={2} fz={{ base: 20, sm: 24 }} fw={800}>
+                      Tìm chuyến bay
+                    </Title>
+                    <Text c="dimmed" size="sm">
+                      Chọn hành trình, thời gian và số hành khách
+                    </Text>
+                  </Box>
+                </Group>
                 <SegmentedControl
-                  aria-label="Tìm chuyến theo ngày hoặc tháng"
+                  fullWidth={false}
+                  size="md"
+                  radius="md"
+                  aria-label="Loại hành trình"
                   data={[
-                    { label: "Theo ngày", value: "day" },
-                    { label: "Theo tháng", value: "month" },
+                    { label: "Một chiều", value: "oneWay" },
+                    { label: "Khứ hồi", value: "roundTrip" },
                   ]}
-                  value={searchPeriod}
-                  onChange={(value) =>
-                  {
-                    if (value !== "day" && value !== "month") return;
-                    setSearchPeriod(value);
-                    form.setFieldValue(value === "day" ? "month" : "date", null);
+                  value={type}
+                  onChange={(value) => {
+                    if (value === "oneWay" || value === "roundTrip") setType(value);
                   }}
                   disabled={submitting || searching}
                 />
-                <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md" verticalSpacing="sm">
-                  <Select
-                    label="Nơi đi"
-                    placeholder="Tất cả điểm đi"
-                    data={airportOptions}
-                    {...form.getInputProps("origin")}
-                    disabled={submitting}
-                    clearable
-                    searchable
-                    size="md"
-                    radius="md"
-                    comboboxProps={{ withinPortal: true, zIndex: 500 }}
-                    leftSection={<IconPlaneDeparture color="blue" />}
-                  />
-                  <Select
-                    label="Nơi đến"
-                    placeholder="Tất cả điểm đến"
-                    data={airportOptions?.filter((opt) => opt.value !== form.values.origin)}
-                    {...form.getInputProps("destination")}
-                    disabled={submitting}
-                    clearable
-                    searchable
-                    size="md"
-                    radius="md"
-                    comboboxProps={{ withinPortal: true, zIndex: 500 }}
-                    leftSection={<IconPlaneArrival color="blue" />}
-                  />
-                  {searchPeriod === "day" ? (
-                    <DateInput
-                      placeholder="Chọn ngày bay"
-                      label="Ngày bay"
-                      {...form.getInputProps("date")}
-                      disabled={submitting}
-                      leftSection={<IconCalendar size={18} color="blue" />}
-                      size="md"
-                      radius="lg"
-                      minDate={new Date()}
-                      valueFormat="DD/MM/YYYY"
-                      locale="vi"
-                    />
-                  ) : (
-                    <MonthPickerInput
-                      placeholder="Chọn tháng bay"
-                      label="Tháng bay"
-                      {...form.getInputProps("month")}
-                      disabled={submitting}
-                      leftSection={<IconCalendar size={18} color="blue" />}
-                      size="md"
-                      radius="lg"
-                      minDate={new Date()}
-                      valueFormat="MMMM YYYY"
-                      locale="vi"
-                    />
-                  )}
+              </Flex>
 
-                  <Group className="booking-passenger-counter booking-counter-adult" justify="space-between" wrap="nowrap" mt="sm">
-                    <Stack gap={0}>
-                      <Text fw={500}>Người lớn</Text>
-                      <Text fz="sm" c="dimmed" fs="italic">12 tuổi trở lên</Text>
-                    </Stack>
-                    <Group className="booking-counter-controls" gap="xs" wrap="nowrap">
-                      <ActionIcon
-                        variant="filled"
-                        disabled={adultCount <= Math.max(1, infantCount) || submitting || searching || passengers.some(p => p.booking !== null)}
-                        onClick={() =>
-                        {
-                          setAdultCount((prev) => Math.max(prev - 1, Math.max(1, infantCount)))
-                        }}
-                      >
-                        <IconMinus color="#ffffff" />
-                      </ActionIcon>
-                      <NumberInput
-                        placeholder="0"
-                        hideControls
-                        readOnly
-                        variant="filled"
-                        min={0}
-                        max={9}
-                        allowDecimal={false}
-                        allowNegative={false}
-                        value={adultCount}
-                        styles={{
-                          root: {
-                            width: 46
-                          },
-                          input: {
-                            textAlign: "center",
-                            fontWeight: 750,
-                          }
-                        }}
-                        disabled={submitting || searching || passengers.some(passenger => passenger.booking !== null)}
-                      />
-                      <ActionIcon
-                        variant="filled"
-                        disabled={adultCount >= 9 || submitting || searching || passengers.some(p => p.booking !== null)}
-                        onClick={() =>
-                        {
-                          setAdultCount((prev) => Math.min(prev + 1, 9))
-                        }}>
-                        <IconPlus color="#ffffff" />
-                      </ActionIcon>
-                    </Group>
-                  </Group>
-                  
-                  <Group className="booking-passenger-counter booking-counter-child" justify="space-between" wrap="nowrap">
-                    <Stack gap={0}>
-                      <Text fw={500}>Trẻ em</Text>
-                      <Text fz="sm" c="dimmed" fs="italic">Từ 2-12 tuổi</Text>
-                    </Stack>
-                    <Group className="booking-counter-controls" gap="xs" wrap="nowrap">
-                      <ActionIcon
-                        variant="filled"
-                        disabled={childCount <= 0 || submitting || searching || passengers.some(p => p.booking !== null)}
-                        onClick={() =>
-                        {
-                          setChildCount((prev) => Math.max(prev - 1, 0))
-                          updatePartySize(adultCount, Math.max(childCount - 1, 0));
-                        }}
-                      >
-                        <IconMinus color="#ffffff" />
-                      </ActionIcon>
-                      <NumberInput
-                        placeholder="0"
-                        hideControls
-                        readOnly
-                        variant="filled"
-                        min={0}
-                        max={9}
-                        allowDecimal={false}
-                        allowNegative={false}
-                        value={childCount}
-                        styles={{
-                          root: {
-                            width: 46
-                          },
-                          input: {
-                            textAlign: "center",
-                            fontWeight: 750,
-                          }
-                        }}
-                        disabled={submitting || searching || passengers.some(passenger => passenger.booking !== null)}
-                      />
-                      <ActionIcon
-                        variant="filled"
-                        disabled={childCount >= 9 || submitting || searching || passengers.some(p => p.booking !== null)}
-                        onClick={() =>
-                        {
-                          setChildCount((prev) => Math.min(prev + 1, 9))
-                          updatePartySize(adultCount, Math.min(childCount + 1, 9));
-                        }}>
-                        <IconPlus color="#ffffff" />
-                      </ActionIcon>
-                    </Group>
+              {/* Khối chọn hành trình */}
+              <Paper radius="lg" p={{ base: "md", sm: "lg" }} bg="gray.0" withBorder>
+                <Stack gap="md">
+                  <Group gap="xs">
+                    <ThemeIcon variant="light" color="blue" radius="md" size={30}>
+                      <IconPlaneDeparture size={17} />
+                    </ThemeIcon>
+                    <Text fw={500} size="md">Hành trình bay</Text>
                   </Group>
 
-                  <Group className="booking-passenger-counter booking-counter-infant" justify="space-between" wrap="nowrap">
-                    <Stack gap={0}>
-                      <Text fw={500}>Em bé</Text>
-                      <Text fz="sm" c="dimmed" fs="italic">Dưới 2 tuổi</Text>
-                    </Stack>
-                    <Group className="booking-counter-controls" gap="xs" wrap="nowrap">
-                      <ActionIcon
-                        variant="filled"
-                        disabled={infantCount <= 0 || submitting || searching || passengers.some(p => p.booking !== null)}
-                        onClick={() =>
-                        {
-                          setInfantCount((prev) => Math.max(prev - 1, 0))
-                        }}
-                      >
-                        <IconMinus color="#ffffff" />
-                      </ActionIcon>
-                      <NumberInput
-                        placeholder="0"
-                        hideControls
-                        readOnly
-                        variant="filled"
-                        min={0}
-                        max={9}
-                        allowDecimal={false}
-                        allowNegative={false}
-                        value={infantCount}
-                        styles={{
-                          root: {
-                            width: 46
-                          },
-                          input: {
-                            textAlign: "center",
-                            fontWeight: 750,
-                          }
-                        }}
-                        disabled={submitting || searching || passengers.some(passenger => passenger.booking !== null)}
-                      />
-                      <ActionIcon
-                        variant="filled"
-                        disabled={infantCount >= Math.min(adultCount, 9) || submitting || searching || passengers.some(p => p.booking !== null)}
-                        onClick={() =>
-                        {
-                          setInfantCount((prev) => Math.min(prev + 1, 9))
-                        }}>
-                        <IconPlus color="#ffffff" />
-                      </ActionIcon>
-                    </Group>
-                  </Group>
-
-                </SimpleGrid>
-                <Flex
-                  w="100%"
-                  align="flex-end"
-                  justify="flex-end"
-                  gap="md"
-                  wrap="nowrap"
-                >
-                  {(infantCount > 0 || childCount > 0) && (
-                    <Alert
-                      color="yellow"
-                      variant="light"
-                      p="sm"
-                      title="Lưu ý"
-                      icon={<IconAlertCircleFilled />}
-                      style={{
-                        flex: 1,
-                        minWidth: 0,
-                      }}
-                    >
-                      {infantCount > 0 && (
-                        <Text fz="sm" fs="italic">
-                          Ngồi cùng người lớn, miễn phí, không tính ghế.
-                        </Text>
-                      )}
-                      {childCount > 0 && (
-                        <Text fz="sm" fs="italic">
-                          Giá cơ bản bằng 75%.
-                        </Text>
-                      )}
-                    </Alert>
-                  )}
-                  <Button
-                    className="booking-search-submit" color="blue"
-                    // type="submit"
-                    size="md"
-                    radius="md"
-                    loading={searching}
-                    disabled={
-                      submitting ||
-                      searching ||
-                      (searchPeriod === "day"
-                        ? !form.values.date
-                        : !form.values.month)
-                    }
-                    leftSection={<IconSearch size={19} />}
-                    rightSection={<IconArrowRight size={17} />}
-                    style={{ flexShrink: 0 }}
-                    onClick={() => handleSearchFlights(form.values)}
+                  <Flex
+                    direction={{ base: "column", sm: "row" }}
+                    align={{ base: "stretch", sm: "flex-end" }}
+                    gap="sm"
                   >
-                    Tìm chuyến bay
-                  </Button>
-                </Flex>
+                    <Select
+                      label="Điểm khởi hành"
+                      placeholder="Chọn nơi đi"
+                      data={airportOptions}
+                      {...searchForm.getInputProps("origin")}
+                      clearable
+                      searchable
+                      disabled={submitting || searching}
+                      size="lg"
+                      radius="md"
+                      leftSection={<IconPlaneDeparture size={19} />}
+                      comboboxProps={{ withinPortal: true, zIndex: 500 }}
+                      styles={{ root: { flex: 1, minWidth: 0 } }}
+                    />
+
+                    <ActionIcon
+                      mt={30}
+                      size={46}
+                      radius="xl"
+                      color="blue"
+                      variant="white"
+
+                      aria-label="Đổi điểm đi và điểm đến"
+                      title="Đổi điểm đi và điểm đến"
+                      disabled={submitting || searching}
+                      onClick={() => {
+                        const origin = searchForm.values.origin;
+                        const destination = searchForm.values.destination;
+                        searchForm.setFieldValue("origin", destination);
+                        searchForm.setFieldValue("destination", origin);
+                      }}
+                      style={{ alignSelf: "center", flexShrink: 0, boxShadow: "0 2px 8px rgba(0,0,0,.08)" }}
+                    >
+                      <IconArrowsExchange2 size={22} />
+                    </ActionIcon>
+
+                    <Select
+                      label="Điểm đến"
+                      placeholder="Chọn nơi đến"
+                      data={airportOptions?.filter((opt) => opt.value !== searchForm.values.origin)}
+                      {...searchForm.getInputProps("destination")}
+                      clearable
+                      searchable
+                      disabled={submitting || searching}
+                      size="lg"
+                      radius="md"
+                      leftSection={<IconPlaneArrival size={19} />}
+                      comboboxProps={{ withinPortal: true, zIndex: 500 }}
+                      styles={{ root: { flex: 1, minWidth: 0 } }}
+                    />
+                  </Flex>
+
+                  <Box>
+                    <Group gap="sm" mb="sm" wrap="wrap">
+                      <Text fw={700} size="sm">Thời gian khởi hành</Text>
+                      <SegmentedControl
+                        size="xs"
+                        radius="md"
+                        aria-label="Cách tìm chuyến"
+                        data={[
+                          { label: "Theo ngày", value: "day" },
+                          { label: "Theo tháng", value: "month" },
+                        ]}
+                        value={searchPeriod}
+                        onChange={(value) => {
+                          if (value !== "day" && value !== "month") return;
+                          setSearchPeriod(value);
+                          searchForm.setFieldValue(value === "day" ? "month" : "date", null);
+                        }}
+                        disabled={submitting || searching}
+                      />
+                    </Group>
+                    {searchPeriod === "day" ? (
+                      <DateInput
+                        label="Ngày bay"
+                        placeholder="Chọn ngày khởi hành"
+                        {...searchForm.getInputProps("date")}
+                        disabled={submitting || searching}
+                        leftSection={<IconCalendar size={19} />}
+                        size="lg"
+                        radius="md"
+                        minDate={new Date()}
+                        valueFormat="DD/MM/YYYY"
+                        locale="vi"
+                        clearable
+                      />
+                    ) : (
+                      <MonthPickerInput
+                        label="Tháng bay"
+                        placeholder="Chọn tháng khởi hành"
+                        {...searchForm.getInputProps("month")}
+                        disabled={submitting || searching}
+                        leftSection={<IconCalendar size={19} />}
+                        size="lg"
+                        radius="md"
+                        minDate={new Date()}
+                        valueFormat="MMMM YYYY"
+                        locale="vi"
+                        clearable
+                      />
+                    )}
+                  </Box>
+                </Stack>
+              </Paper>
+
+              {/* Khối chọn hành khách */}
+              <Stack gap="sm">
+                <Group gap="sm" wrap="wrap">
+                  <Text fw={500} size="md">Hành khách</Text>
+                  <Text c="dimmed" size="sm">
+                    {adultCount + childCount + infantCount} người
+                  </Text>
+                </Group>
+
+                <SimpleGrid cols={{ base: 1, md: 3 }} spacing="sm">
+                  {([
+                    {
+                      key: "adult",
+                      name: "Người lớn",
+                      description: "Từ 12 tuổi",
+                      count: adultCount,
+                      min: Math.max(1, infantCount),
+                      max: 9,
+                      decrease: () => {
+                        const next = Math.max(adultCount - 1, Math.max(1, infantCount));
+                        setAdultCount(next);
+                        updatePartySize(next, childCount);
+                      },
+                      increase: () => {
+                        const next = Math.min(adultCount + 1, 9);
+                        setAdultCount(next);
+                        updatePartySize(next, childCount);
+                      },
+                    },
+                    {
+                      key: "child",
+                      name: "Trẻ em",
+                      description: "Từ 2 đến dưới 12 tuổi",
+                      count: childCount,
+                      min: 0,
+                      max: 9,
+                      decrease: () => {
+                        const next = Math.max(childCount - 1, 0);
+                        setChildCount(next);
+                        updatePartySize(adultCount, next);
+                      },
+                      increase: () => {
+                        const next = Math.min(childCount + 1, 9);
+                        setChildCount(next);
+                        updatePartySize(adultCount, next);
+                      },
+                    },
+                    {
+                      key: "infant",
+                      name: "Em bé",
+                      description: "Dưới 2 tuổi",
+                      count: infantCount,
+                      min: 0,
+                      max: Math.min(adultCount, 9),
+                      decrease: () => setInfantCount((prev) => Math.max(prev - 1, 0)),
+                      increase: () => setInfantCount((prev) => Math.min(prev + 1, adultCount, 9)),
+                    },
+                  ] as const).map((item) => {
+                    const locked = submitting || searching || passengers.some((p) => p.booking !== null);
+                    return (
+                      <Paper key={item.key} withBorder radius="lg" p="md">
+                        <Flex align="center" gap="sm">
+                          <Box style={{ flex: 1, minWidth: 0 }}>
+                            <Text fw={700} size="md">{item.name}</Text>
+                            <Text c="dimmed" size="sm">{item.description}</Text>
+                          </Box>
+                          <Group gap={6} wrap="nowrap">
+                            <ActionIcon
+                              aria-label={`Giảm ${item.name.toLowerCase()}`}
+                              variant="light"
+                              color="gray"
+                              radius="md"
+                              size={34}
+                              disabled={locked || item.count <= item.min}
+                              onClick={item.decrease}
+                            >
+                              <IconMinus size={17} />
+                            </ActionIcon>
+                            <Text fw={800} fz={20} ta="center" miw={24}>
+                              {item.count}
+                            </Text>
+                            <ActionIcon
+                              aria-label={`Tăng ${item.name.toLowerCase()}`}
+                              variant="light"
+                              color="blue"
+                              radius="md"
+                              size={34}
+                              disabled={locked || item.count >= item.max}
+                              onClick={item.increase}
+                            >
+                              <IconPlus size={17} />
+                            </ActionIcon>
+                          </Group>
+                        </Flex>
+                      </Paper>
+                    );
+                  })}
+                </SimpleGrid>
+
+                {(infantCount > 0 || childCount > 0) && (
+                  <Alert
+                    color="yellow"
+                    variant="light"
+                    radius="md"
+                    p="sm"
+                    icon={<IconAlertCircleFilled size={19} />}
+                  >
+                    <Text size="sm">
+                      {infantCount > 0 && "Em bé ngồi cùng người lớn, miễn phí và không tính ghế."}
+                      {infantCount > 0 && childCount > 0 && " "}
+                      {childCount > 0 && "Giá cơ bản cho trẻ em bằng 75%."}
+                    </Text>
+                  </Alert>
+                )}
               </Stack>
+
+              {/* Hành động tìm kiếm */}
+              <Flex
+                direction={{ base: "column", sm: "row" }}
+                align={{ base: "stretch", sm: "center" }}
+                gap="md"
+                pt="sm"
+                style={{ borderTop: "1px solid var(--mantine-color-gray-2)" }}
+              >
+                <Box style={{ flex: 1 }}>
+                  <Text fw={700} size="sm">
+                    {type === "roundTrip" ? "Chuyến khứ hồi" : "Chuyến một chiều"}
+                    {` · ${adultCount + childCount + infantCount} hành khách`}
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    {searchPeriod === "day" ? "Tìm theo ngày khởi hành" : "Tìm trong tháng khởi hành"}
+                  </Text>
+                </Box>
+                <Button
+                  className="booking-search-submit"
+                  size="lg"
+                  radius="md"
+                  color="blue"
+                  leftSection={<IconSearch size={20} />}
+                  rightSection={<IconArrowRight size={18} />}
+                  loading={searching}
+                  disabled={
+                    submitting ||
+                    searching ||
+                    (searchPeriod === "day" ? !searchForm.values.date : !searchForm.values.month)
+                  }
+                  onClick={() => handleSearchFlights(searchForm.values)}
+                >
+                  Tìm chuyến bay
+                </Button>
+              </Flex>
             </Stack>
           </Paper>
+
           {error && (
             <Alert icon={<IconAlertCircle size={20} />} title="Có lỗi xảy ra" color="red" variant="light" radius="md" role="alert">
               {error}
@@ -857,14 +910,23 @@ function BookingPageContent()
                       <ThemeIcon size={58} radius="xl" color="gray" variant="light">
                         <IconSearch size={30} />
                       </ThemeIcon>
-                      <Text fw={700} ta="center">Không tìm thấy chuyến bay</Text>
-                      <Text c="dimmed" size="sm" ta="center">
-                        Chuyến bay từ <strong>{form.values.origin || "nơi đi"}</strong> đến <strong>{form.values.destination || "nơi đến"}</strong> trong {searchPeriod === "day" ? <>ngày <strong>{form.values.date ? dateFormater(form.values.date, "dd/MM/yyyy") : "đã chọn"}</strong></> : <>tháng <strong>{form.values.month?.slice(0, 7) ?? "đã chọn"}</strong></>} không có sẵn.
-                      </Text>
+                      {(!searchForm.values.destination || !searchForm.values.origin) ?
+                        (
+                          <Text ta="center">Chọn <b>Nơi đi</b> và <b>Nơi đến</b> để tìm chuyến bay</Text>
+                        ) : (
+                          <>
+                            <Text fw={700} ta="center">Không tìm thấy chuyến bay nào phù hợp</Text>
+                            <Text c="dimmed" size="sm" ta="center">
+                              Chuyến bay từ <strong>{searchForm.values.origin || "nơi đi"}</strong> đến <strong>{searchForm.values.destination || "nơi đến"}</strong> trong {searchPeriod === "day" ? <>ngày <strong>{searchForm.values.date ? dateFormater(searchForm.values.date, "dd/MM/yyyy") : "đã chọn"}</strong></> : <>tháng <strong>{searchForm.values.month?.slice(0, 7) ?? "đã chọn"}</strong></>} không có sẵn.
+                            </Text>
+                          </>
+                        )}
+
                     </Stack>
                   </Center>
                 ) : (
                   <Stack gap="sm">
+
                     <Grid gap={{ base: "md", lg: "lg" }} align="stretch">
                       <Grid.Col span={{ base: 12, md: 7 }}>
                         <Group className="booking-list-heading" justify="space-between" align="center" gap="sm" mb="xs">
@@ -876,611 +938,386 @@ function BookingPageContent()
                         </Group>
 
                         <Stack className="booking-flight-list" gap="sm">
-                          {flights.map((item) =>
-                          {
+                          {flights.map((item) => {
                             const isSelected = flight?.flightId === item.flightId;
                             const soldOut = item.availableSeats === 0;
-                            const flightCode = String(item.flightNo ?? "").toUpperCase();
-                            // Chỉ hiện tên hãng khi mã chuyến thực sự có tiền tố tương ứng.
-                            const carrier = /^(VN|HVN)(-|\d)/.test(flightCode)
-                              ? { name: "Vietnam Airlines", short: "VN", tone: "vietnam" }
-                              : /^(VJ)(-|\d)/.test(flightCode)
-                                ? { name: "Vietjet Air", short: "VJ", tone: "vietjet" }
-                                : /^(QH)(-|\d)/.test(flightCode)
-                                  ? { name: "Bamboo Airways", short: "QH", tone: "bamboo" }
-                                  : /^(VU)(-|\d)/.test(flightCode)
-                                    ? { name: "Vietravel Airlines", short: "VU", tone: "vietravel" }
-                                    : { name: "Chuyến bay", short: "✈", tone: "other" };
+
+                            const tone = item.airlineCode === "VJ" ? "vietjet" : item.airlineCode === "VN" ? "vietnam" : item.airlineCode === "QH" ? "bamboo" : item.airlineCode === "VU" ? "vietravel" : "orther";
+
+                            const carrier = { name: item.airlineName, short: item.airlineCode, tone: tone }
                             const canFit = !soldOut && item.availableSeats >= requiredSeatCount;
                             return (
-                              <Paper
-                                component="button"
-                                type="button"
-                                key={item.flightId}
-                                withBorder
-                                radius="lg"
-                                p="md"
-                                className={`booking-flight-card ticket-ref ticket-ref--${carrier.tone}${isSelected ? " ticket-ref--selected" : ""}`}
-                                disabled={submitting || searching}
-                                aria-pressed={isSelected}
-                                aria-label={`${item.flightNo}, ${item.origin} đến ${item.destination}, ${money(item.price)}. ${soldOut ? "Hết chỗ" : `Còn ${item.availableSeats} ghế`}`}
-                                onClick={() => void chooseFlight(item)}
-                              >
-                                {/* Hàng 1 — Logo/tên hãng, mã chuyến và dấu mở rộng trang trí */}
-                                <Group className="ticket-ref__header" gap="xs" wrap="nowrap">
-                                  <Box className="ticket-ref__mark" aria-hidden="true">
-                                    {carrier.tone === "vietnam" ? "✺" : carrier.short}
-                                  </Box>
-                                  <Text className="ticket-ref__brand" fw={800} title={carrier.name}>
-                                    {carrier.name}
-                                  </Text>
-                                  <Text className="ticket-ref__number" fw={750}>{item.flightNo}</Text>
-                                  <Box className="ticket-ref__chevron" aria-hidden="true">
-                                    <IconArrowRight size={16} stroke={2.2} />
-                                  </Box>
-                                </Group>
-
-                                {/* Hàng 2 — Giờ đi / thời lượng / giờ đến + giá cùng hàng */}
-                                <Box className="ticket-ref__main">
-                                  <Box className="ticket-ref__route">
-                                    <Stack gap={2} className="ticket-ref__airport">
-                                      <Text className="ticket-ref__time">{dateFormater(item.departureTime, "HH:mm")}</Text>
-                                      <Text className="ticket-ref__iata">{item.origin}</Text>
-                                      <Text className="ticket-ref__city" lineClamp={1}>{item.originCity}</Text>
-                                    </Stack>
-
-                                    <Stack gap={3} align="center" className="ticket-ref__track">
-                                      <Text className="ticket-ref__duration">
-                                        {flightDuration(item.departureTime, item.arrivalTime)}
-                                      </Text>
-                                      <Group gap={5} wrap="nowrap" w="100%" align="center" aria-hidden="true">
-                                        <Box className="ticket-ref__dash" />
-                                        <IconPlane size={17} stroke={1.8} />
-                                        <Box className="ticket-ref__dash" />
-                                      </Group>
-                                      <Text className="ticket-ref__direct">Bay thẳng</Text>
-                                    </Stack>
-
-                                    <Stack gap={2} className="ticket-ref__airport ticket-ref__airport--arrival">
-                                      <Text className="ticket-ref__time">{dateFormater(item.arrivalTime, "HH:mm")}</Text>
-                                      <Text className="ticket-ref__iata">{item.destination}</Text>
-                                      <Text className="ticket-ref__city" lineClamp={1}>{item.destinationCity}</Text>
-                                    </Stack>
-                                  </Box>
-
-                                  <Stack className="ticket-ref__fare" gap={0} align="flex-end">
-                                    <Text className="ticket-ref__amount">{money(item.price)}</Text>
-                                    <Text className="ticket-ref__unit">/ hành khách</Text>
-                                  </Stack>
-                                </Box>
-
-                                {/* Hàng 3 — Ngày, các đặc điểm và nút chọn bên phải */}
-                                <Box className="ticket-ref__footer">
-                                  <Stack className="ticket-ref__details" gap={7}>
-                                    <Group className="ticket-ref__date" gap={6} wrap="nowrap">
-                                      <IconCalendar size={15} stroke={1.8} />
-                                      <Text span>
-                                        {new Date(item.departureTime).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh" })}
-                                        {" · "}
-                                        {new Date(item.departureTime).toLocaleDateString("vi-VN", { weekday: "long", timeZone: "Asia/Ho_Chi_Minh" })}
-                                      </Text>
-                                    </Group>
-                                    <Group gap={6} wrap="wrap" className="ticket-ref__badges">
-                                      <Badge color={soldOut ? "red" : canFit ? "green" : "orange"} variant="light" radius="sm" leftSection={!soldOut ? <IconCheck size={12} /> : undefined}>
-                                        {soldOut ? "Hết chỗ" : `Còn ${item.availableSeats} ghế`}
-                                      </Badge>
-                                      <Badge color="blue" variant="light" radius="sm">
-                                        Chọn hạng ghế
-                                      </Badge>
-                                      <Badge color="orange" variant="light" radius="sm">
-                                        Dịch vụ mua thêm
-                                      </Badge>
-                                      {!canFit && !soldOut && (
-                                        <Badge color="red" variant="light" radius="sm">
-                                          Thiếu ghế cho nhóm {requiredSeatCount} người
-                                        </Badge>
-                                      )}
-                                    </Group>
-                                  </Stack>
-                                  <Box className="ticket-ref__cta" aria-hidden="true">
-                                    <Text span fw={750}>
-                                      {isSelected ? "Đang chọn" : soldOut ? "Hết chỗ" : "Chọn chuyến"}
+                              <Stack key={item.flightId} gap="sm">
+                                <Paper
+                                  component="button"
+                                  type="button"
+                                  withBorder
+                                  radius="lg"
+                                  p="md"
+                                  className={`booking-flight-card ticket-ref ticket-ref--${carrier.tone}${isSelected ? " ticket-ref--selected" : ""}`}
+                                  disabled={submitting || searching}
+                                  aria-pressed={isSelected}
+                                  aria-label={`${item.flightNo}, ${item.origin} đến ${item.destination}, ${money(item.price)}. ${soldOut ? "Hết chỗ" : `Còn ${item.availableSeats} ghế`}`}
+                                  onClick={() => {
+                                    toggleChooseFlight(item);
+                                  }}
+                                >
+                                  {/* Logo/tên hãng, mã chuyến và dấu mở rộng trang trí */}
+                                  <Group className="ticket-ref__header" gap="xs" wrap="nowrap">
+                                    <Box className="ticket-ref__mark" aria-hidden="true">
+                                      {carrier.tone === "vietnam" ? "✺" : carrier.short}
+                                    </Box>
+                                    <Text className="ticket-ref__brand" fw={800} title={carrier.name}>
+                                      {carrier.name}
                                     </Text>
-                                    <IconArrowRight size={16} />
+                                    <Text className="ticket-ref__number" fw={500}>{item.flightNo}</Text>
+
+                                  </Group>
+
+                                  {/* Giờ đi / thời lượng / giờ đến + giá cùng hàng */}
+                                  <Box className="ticket-ref__main">
+                                    <Box className="ticket-ref__route">
+                                      <Stack gap={2} className="ticket-ref__airport">
+                                        <Text className="ticket-ref__time">{dateFormater(item.departureTime, "HH:mm")}</Text>
+                                        <Text className="ticket-ref__iata">{item.origin}</Text>
+                                        <Text className="ticket-ref__city" lineClamp={1}>{item.originCity}</Text>
+                                      </Stack>
+
+                                      <Stack gap={3} align="center" className="ticket-ref__track">
+                                        <Text className="ticket-ref__duration">
+                                          {flightDuration(item.departureTime, item.arrivalTime)}
+                                        </Text>
+                                        <Group gap={5} wrap="nowrap" w="100%" align="center" aria-hidden="true">
+                                          <Box className="ticket-ref__dash" />
+                                          <IconPlane size={17} stroke={1.8} />
+                                          <Box className="ticket-ref__dash" />
+                                        </Group>
+                                        <Text className="ticket-ref__direct">Bay thẳng</Text>
+                                      </Stack>
+
+                                      <Stack gap={2} className="ticket-ref__airport ticket-ref__airport--arrival">
+                                        <Text className="ticket-ref__time">{dateFormater(item.arrivalTime, "HH:mm")}</Text>
+                                        <Text className="ticket-ref__iata">{item.destination}</Text>
+                                        <Text className="ticket-ref__city" lineClamp={1}>{item.destinationCity}</Text>
+                                      </Stack>
+                                    </Box>
+
+                                    <Stack className="ticket-ref__fare" gap={0} align="flex-end">
+                                      <Text className="ticket-ref__amount">{money(item.price)}</Text>
+                                      <Text className="ticket-ref__unit">/ hành khách</Text>
+                                    </Stack>
                                   </Box>
-                                </Box>
-                              </Paper>
+
+                                  {/* Ngày, các đặc điểm và nút chọn bên phải */}
+                                  <Box className="ticket-ref__footer">
+                                    <Stack className="ticket-ref__details" gap={7}>
+                                      <Group className="ticket-ref__date" gap={6} wrap="nowrap">
+                                        <IconCalendar size={15} stroke={1.8} />
+                                        <Text span>
+                                          {dateFormat(item.departureTime, "dd/MM/yyyy")}
+                                          {" · "}
+                                          {new Date(item.departureTime).toLocaleDateString("vi-VN", { weekday: "long", timeZone: "Asia/Ho_Chi_Minh" })}
+                                        </Text>
+                                      </Group>
+                                      <Group gap={6} wrap="wrap" className="ticket-ref__badges">
+                                        <Badge color={soldOut ? "red" : canFit ? "green" : "orange"} variant="light" radius="sm" styles={{
+                                          label: {
+                                            fontSize: "var(--mantine-font-size-sm)",
+                                            fontWeight: 500
+                                          }
+                                        }}>
+                                          {soldOut ? "Hết chỗ" : `Còn ${item.availableSeats} ghế`}
+                                        </Badge>
+
+                                        {!canFit && !soldOut && (
+                                          <Badge color="red" variant="light" radius="sm">
+                                            Thiếu ghế cho nhóm {requiredSeatCount} người
+                                          </Badge>
+                                        )}
+                                      </Group>
+                                    </Stack>
+                                    <Box className="ticket-ref__cta" aria-hidden="true">
+                                      <Text span fw={500}>
+                                        {isSelected ? "Đang chọn" : soldOut ? "Hết chỗ" : "Chọn chuyến"}
+                                      </Text>
+                                      {isSelected ? <IconArrowDown size={16} /> : <IconArrowRight size={16} />}
+                                    </Box>
+                                  </Box>
+                                </Paper>
+                                <Divider my="sm" />
+                                {flight && loadingSeats && !allPassengersBooked && (
+                                  <Center mih={240} role="status">
+                                    <Stack align="center" gap="sm">
+                                      <Loader size="md" />
+                                      <Text c="dimmed" size="sm">Đang tải sơ đồ ghế…</Text>
+                                    </Stack>
+                                  </Center>
+                                )}
+                                {flight && flight.flightId === item.flightId && !loadingSeats && !allPassengersBooked && (
+                                  <Stack gap="lg">
+
+                                    {flights?.length > 1 && (
+                                      <Flex justify="flex-end">
+                                        <Button
+                                          variant="light"
+                                          color="gray"
+                                          size="sm"
+                                          onClick={() => {
+                                            setFlight(null);
+                                            setSeats([]);
+                                            setPassengers([createPassenger()]);
+                                            setActivePassengerIndex(0);
+                                          }} disabled={submitting}>
+                                          Đổi chuyến
+                                        </Button>
+                                      </Flex>
+                                    )}
+                                    {flight.availableSeats < requiredSeatCount && (
+                                      <Alert
+                                        color={suggestionError ? "red" : "orange"}
+                                        variant="light"
+                                        title="Chuyến này không đủ ghế cho nhóm"
+                                      >
+                                        <Stack gap="sm">
+                                          <Text size="sm">
+                                            Cần {requiredSeatCount} ghế cho {adultCount} người lớn và {childCount} trẻ em; chuyến hiện còn {flight.availableSeats} ghế.
+                                            {infantCount > 0 ? ` ${infantCount} trẻ dưới 2 tuổi ngồi cùng người lớn, không cần ghế.` : ""}
+                                          </Text>
+                                          {loadingSuggestions && <Text size="sm">Đang tìm chuyến gần giờ hoặc ngày liền kề…</Text>}
+
+                                          {suggestionError && <Text size="sm">{suggestionError}</Text>}
+
+                                          {!loadingSuggestions && !suggestionError && suggestedFlights.length === 0 && (
+                                            <Text size="sm">Không tìm thấy chuyến liền kề còn đủ ghế. Hãy đổi ngày hoặc giảm số hành khách.</Text>
+                                          )}
+
+                                          {suggestedFlights.map(candidate => (
+                                            <Button
+                                              key={candidate.flightId}
+                                              type="button"
+                                              variant="white"
+                                              color="blue"
+                                              size="sm"
+                                              justify="space-between"
+                                              onClick={() => void toggleChooseFlight(candidate)}
+                                              disabled={submitting}
+                                            >
+                                              {flightDate(candidate.departureTime) === flightDate(flight.departureTime)
+                                                ? `Cùng ngày · ${new Date(candidate.departureTime).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" })}`
+                                                : `${new Date(candidate.departureTime).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit" })} · ${new Date(candidate.departureTime).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" })}`}
+                                              {" · "}{candidate.flightNo} · còn {candidate.availableSeats} ghế
+                                            </Button>
+                                          ))}
+                                        </Stack>
+                                      </Alert>
+                                    )}
+                                    <Paper className="booking-passenger-card" withBorder radius="lg" p={{ base: "md", sm: "lg" }}>
+
+                                      <SectionThongTinKhachHang
+                                        flight={flight}
+                                        allPassengersBooked={allPassengersBooked}
+                                        adultCount={adultCount}
+                                        childCount={childCount}
+                                        infantCount={infantCount}
+                                        passengers={passengers}
+                                        form={bookingForm}
+                                      />
+
+                                      <SectionBookingSeat
+                                        passengers={passengers}
+                                        seats={seats}
+                                        adultCount={adultCount}
+                                        availableSeats={availableSeats}
+                                        onSelectedSeats={setPassengers}
+                                      />
+                                    </Paper>
+                                  </Stack>
+                                )}
+                              </Stack>
 
                             );
                           })}
                         </Stack>
 
+
                       </Grid.Col>
                       <Grid.Col span={{ base: 12, md: 5 }}>
                         <Paper
-                          className="booking-panel booking-seat-panel" component="section" withBorder radius="lg" p={{ base: "md", sm: "lg" }} shadow="xs" aria-labelledby="seat-passenger-title">
-                          <Stack gap="md">
-                            <Group justify="space-between" align="center" gap="sm" wrap="wrap">
-                              <Box>
-                                <Title order={2} size="xl" id="seat-passenger-title">Ghế & hành khách</Title>
-                              </Box>
-                              {flight && !allPassengersBooked && (
-                                <Badge color={selectedSeats.every(Boolean) ? "teal" : "gray"} variant="light" size="lg">
-                                  {selectedSeats.filter(Boolean).length}/{passengers.length} ghế đã chọn
-                                </Badge>
-                              )}
-                            </Group>
-                            <Divider />
-                            {!flight && (
-                              <Center mih={250}>
-                                <Stack align="center" gap="sm" px="md">
-                                  <ThemeIcon radius="xl" size={64} variant="light" color="gray">
-                                    <IconArmchair size={30} />
-                                  </ThemeIcon>
-                                  <Text size="lg" fw={750} ta="center">Chọn chuyến bay trước</Text>
-                                  <Text c="dimmed" size="sm" ta="center">
-                                    Thông tin chuyến và sơ đồ ghế sẽ hiển thị tại đây.
-                                  </Text>
-                                </Stack>
-                              </Center>
-                            )}
-                            {flight && loadingSeats && !allPassengersBooked && (
-                              <Center mih={240} role="status">
-                                <Stack align="center" gap="sm">
-                                  <Loader size="md" />
-                                  <Text c="dimmed" size="sm">Đang tải sơ đồ ghế…</Text>
-                                </Stack>
-                              </Center>
-                            )}
-                            {flight && !loadingSeats && !allPassengersBooked && (
-                              <Stack gap="lg">
-                                <Paper className="booking-flight-summary" p="md" radius="lg" withBorder>
-                                  <Group gap="md" align="center" wrap="nowrap">
-                                    <ThemeIcon size={42} radius="md" color="blue" variant="light" style={{ flexShrink: 0 }}>
-                                      <IconPlane size={23} />
-                                    </ThemeIcon>
-                                    <Stack gap={3} style={{ flex: 1, minWidth: 0 }}>
-                                      <Text fw={750} size="md">
-                                        {flight.flightNo} · {flight.origin} → {flight.destination}
-                                      </Text>
-                                      <Text c="dimmed" size="sm" lineClamp={2}>
-                                        {flight.originCity} → {flight.destinationCity}
-                                      </Text>
-                                    </Stack>
-                                    <Button variant="subtle" color="gray" size="sm" onClick={() =>
-                                    {
-                                      setFlight(null);
-                                      setSeats([]);
-                                      setPassengers([createPassenger()]);
-                                      setActivePassengerIndex(0);
-                                    }} disabled={submitting}>
-                                      Đổi chuyến
-                                    </Button>
-                                  </Group>
-                                </Paper>
-                                {flight.availableSeats < requiredSeatCount && (
-                                  <Alert color={suggestionError ? "red" : "orange"} variant="light" title="Chuyến này không đủ ghế cho nhóm">
-                                    <Stack gap="sm">
-                                      <Text size="sm">
-                                        Cần {requiredSeatCount} ghế cho {adultCount} người lớn và {childCount} trẻ em; chuyến hiện còn {flight.availableSeats} ghế.
-                                        {infantCount > 0 ? ` ${infantCount} trẻ dưới 2 tuổi ngồi cùng người lớn, không cần ghế.` : ""}
-                                      </Text>
-                                      {loadingSuggestions && <Text size="sm">Đang tìm chuyến gần giờ hoặc ngày liền kề…</Text>}
-                                      {suggestionError && <Text size="sm">{suggestionError}</Text>}
-                                      {!loadingSuggestions && !suggestionError && suggestedFlights.length === 0 && (
-                                        <Text size="sm">Không tìm thấy chuyến liền kề còn đủ ghế. Hãy đổi ngày hoặc giảm số hành khách.</Text>
-                                      )}
-                                      {suggestedFlights.map(candidate => (
-                                        <Button
-                                          key={candidate.flightId}
-                                          type="button"
-                                          variant="white"
-                                          color="blue"
-                                          size="sm"
-                                          justify="space-between"
-                                          onClick={() => void chooseFlight(candidate)}
-                                          disabled={submitting}
-                                        >
-                                          {flightDate(candidate.departureTime) === flightDate(flight.departureTime)
-                                            ? `Cùng ngày · ${new Date(candidate.departureTime).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" })}`
-                                            : `${new Date(candidate.departureTime).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit" })} · ${new Date(candidate.departureTime).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" })}`}
-                                          {" · "}{candidate.flightNo} · còn {candidate.availableSeats} ghế
-                                        </Button>
-                                      ))}
-                                    </Stack>
-                                  </Alert>
-                                )}
-                                <Stack gap="sm">
-                                  <Group justify="space-between" align="center" gap="xs" wrap="wrap">
-                                    <Box>
-                                      <Title order={3} size="lg">Chọn chỗ ngồi</Title>
-                                      <Text c="dimmed" size="sm">Ghế tiêu chuẩn đã gồm trong giá; một số vị trí có phụ thu.</Text>
-                                    </Box>
-                                    <Badge size="lg" variant="light" color="teal">{availableSeats} ghế trống</Badge>
-                                  </Group>
-                                  <Group gap="md" wrap="wrap" aria-label="Chú giải sơ đồ ghế">
-                                    <Group gap={6}>
-                                      <Box w={15} h={15} bg="teal.0" style={{ border: "1px solid var(--mantine-color-teal-4)", borderRadius: 4 }} />
-                                      <Text size="sm" c="dimmed">Còn trống</Text>
-                                    </Group>
-                                    <Group gap={6}>
-                                      <Box w={15} h={15} bg="gray.2" style={{ border: "1px solid var(--mantine-color-gray-4)", borderRadius: 4 }} />
-                                      <Text size="sm" c="dimmed">Đã đặt</Text>
-                                    </Group>
-                                    <Group gap={6}>
-                                      <Box w={15} h={15} bg="blue.6" style={{ borderRadius: 4 }} />
-                                      <Text size="sm" c="dimmed">Đang chọn</Text>
-                                    </Group>
-                                  </Group>
-                                  <Group gap="xs" wrap="wrap" aria-label="Hạng vé và phụ thu">
-                                    <Badge color="teal" variant="light">Phổ thông · +0đ</Badge>
-                                    <Badge color="blue" variant="light">Phổ thông đặc biệt · +500.000đ</Badge>
-                                    <Badge color="orange" variant="light">Thương gia · +1.000.000đ</Badge>
-                                  </Group>
-                                  <Group gap="xs" wrap="wrap" aria-label="Chọn hành khách để gán ghế">
-                                    <Text size="sm" fw={600}>Gán ghế cho:</Text>
-                                    {passengers.map((passenger, index) => (
-                                      <Button
-                                        key={index}
-                                        type="button"
-                                        size="xs"
-                                        variant={activePassengerIndex === index ? "filled" : "light"}
-                                        color="blue"
-                                        onClick={() => setActivePassengerIndex(index)}
-                                        disabled={submitting || passenger.booking !== null}
-                                      >
-                                        {passenger.passengerType === "CHILD" ? `Trẻ em ${index - adultCount + 1}` : `Người lớn ${index + 1}`}
-                                        {passenger.seatId ? " · đã có ghế" : ""}
-                                      </Button>
-                                    ))}
-                                  </Group>
-                                </Stack>
-                                {/* 6 ghế/hàng, có lối đi ở giữa ghế thứ 3 và thứ 4 */}
-                                {seats.length > 0 ? (
-                                  <Paper className="booking-seat-map" radius="lg" p="md" withBorder>
-                                    <ScrollArea type="auto" offsetScrollbars>
-                                      <Box
-                                        role="group"
-                                        aria-label="Sơ đồ chọn ghế"
-                                        mx="auto"
-                                        style={{
-                                          display: "grid",
-                                          gridTemplateColumns: "22px repeat(3, 38px) 18px repeat(3, 38px)",
-                                          gridAutoRows: "36px",
-                                          gap: 7,
-                                          width: "max-content",
-                                          padding: "8px 3px",
-                                        }}
-                                      >
-                                        {["A", "B", "C", "D", "E", "F"].map((letter, index) => (
-                                          <Text
-                                            key={letter}
-                                            className="booking-seat-axis"
-                                            ta="center"
-                                            style={{ gridRow: 1, gridColumn: index < 3 ? index + 2 : index + 3 }}
-                                          >{letter}</Text>
-                                        ))}
-                                        {Array.from({ length: Math.ceil(seats.length / 6) }, (_, index) => (
-                                          <Text
-                                            key={`row-${index}`}
-                                            className="booking-seat-axis"
-                                            ta="center"
-                                            style={{ gridColumn: 1, gridRow: index + 2 }}
-                                          >{String(index + 1).padStart(2, "0")}</Text>
-                                        ))}
-                                        {seats.map((item, index) =>
-                                        {
-                                          const assignedPassengerIndex = passengers.findIndex(passenger => passenger.seatId === item.seatId);
-                                          const isChosen = assignedPassengerIndex >= 0;
-                                          const isAvailable = item.status === "AVAILABLE";
-                                          const columnInRow = index % 6;
-                                          const price = seatPrice(item.seatNo);
-                                          const classPrice = cabinPrices[item.cabinClass] ?? 0;
-                                          return (
-                                            <Button
-                                              key={item.seatId}
-                                              className={`booking-seat-button${isChosen ? " booking-seat-button-selected" : isAvailable ? ` booking-seat-button-available booking-seat-class-${String(item.cabinClass).toLowerCase()}` : " booking-seat-button-unavailable"}`}
-                                              type="button"
-                                              size="sm"
-                                              radius="sm"
-                                              p={0}
-                                              fz="sm"
-                                              fw={700}
-                                              variant={isChosen ? "filled" : isAvailable ? "light" : "default"}
-                                              color={isChosen ? "blue" : isAvailable ? "teal" : "gray"}
-                                              disabled={!isAvailable || submitting ||
-                                                (assignedPassengerIndex >= 0 && assignedPassengerIndex !== activePassengerIndex) ||
-                                                passengers[activePassengerIndex]?.booking !== null}
-                                              aria-pressed={isChosen}
-                                              aria-label={`Ghế ${item.seatNo}, hạng ${cabinLabels[item.cabinClass] ?? item.cabinClass}${isChosen ? `, hành khách ${assignedPassengerIndex + 1} đã chọn` : isAvailable ? " còn trống" : " không còn trống"}, phụ thu hạng ${money(classPrice)}${price ? `, phụ thu vị trí ${money(price)}` : ""}`}
-                                              onClick={() =>
-                                              {
-                                                setError("");
-                                                setPassengers(current => current.map((passenger, passengerIndex) =>
-                                                  passengerIndex === activePassengerIndex
-                                                    ? { ...passenger, seatId: passenger.seatId === item.seatId ? null : item.seatId }
-                                                    : passenger));
-                                              }}
-                                              style={{
-                                                gridColumn: columnInRow < 3 ? columnInRow + 2 : columnInRow + 3,
-                                                gridRow: Math.floor(index / 6) + 2,
-                                                minWidth: 0,
-                                                width: "100%",
-                                                height: 36,
-                                              }}
-                                            >
-                                              {isChosen ? item.seatNo : isAvailable ? item.seatNo : "×"}
-                                            </Button>
-                                          );
-                                        })}
-                                      </Box>
-                                    </ScrollArea>
-                                  </Paper>
-                                ) : (
-                                  <Text c="dimmed" size="sm" ta="center" py="lg">
-                                    Chuyến bay này chưa có sơ đồ ghế.
-                                  </Text>
-                                )}
-                                <Text className="booking-seat-pricing-note" size="xs" c="dimmed">
-                                  Chọn hành khách cần gán ghế ở trên · Hàng 01 +100.000đ, ghế A/F +50.000đ.
-                                </Text>
-                                {flight && !allPassengersBooked && (
-                                  <Paper className="booking-passenger-card" withBorder radius="lg" p={{ base: "md", sm: "lg" }}>
-                                    <Box component="form" onSubmit={book}>
-                                      <Stack gap="md">
-                                        <Group justify="space-between" align="center" gap="sm" wrap="wrap">
-                                          <Box>
-                                            <Text c="blue.7" tt="uppercase" fw={800} size="sm" lts={0.5}>
-                                              Hành khách & dịch vụ
-                                            </Text>
-                                            <Title order={3} size="lg">Thông tin đặt vé</Title>
-                                          </Box>
-                                          <Badge color="blue" variant="light" size="lg">
-                                            {selectedSeats.filter(Boolean).length}/{passengers.length} ghế đã chọn
-                                          </Badge>
-                                        </Group>
-                                        <Paper withBorder radius="md" p="sm">
-                                          <Group justify="space-between" gap="xs" wrap="wrap">
-                                            <Text size="sm" fw={700}>Số lượng đã chọn ở bước tìm chuyến</Text>
-                                            <Text size="sm">
-                                              {adultCount} người lớn · {childCount} trẻ em · {infantCount} trẻ dưới 2 tuổi
-                                            </Text>
-                                          </Group>
-                                        </Paper>
-                                        <Stack gap="xs">
-                                          {passengers.map((passenger, index) =>
-                                          {
-                                            const assignedSeat = selectedSeats[index];
-                                            return (
-                                              <Paper key={index} withBorder radius="md" p="sm">
-                                                <Stack gap="xs">
-                                                  <Group justify="space-between" align="center">
-                                                    <Text size="sm" fw={700}>
-                                                      {passenger.passengerType === "CHILD" ? "Trẻ em" : "Người lớn"} {passenger.passengerType === "CHILD" ? index - adultCount + 1 : index + 1}
-                                                    </Text>
-                                                    <Text size="sm" c={assignedSeat ? "dark" : "dimmed"}>
-                                                      {assignedSeat
-                                                        ? `Ghế ${assignedSeat.seatNo} · ${cabinLabels[assignedSeat.cabinClass] ?? assignedSeat.cabinClass}`
-                                                        : "Chưa chọn ghế"}
-                                                    </Text>
-                                                  </Group>
-                                                  <TextInput
-                                                    label="Họ và tên"
-                                                    placeholder="Nhập họ tên như trên giấy tờ"
-                                                    value={passenger.name}
-                                                    onChange={event => setPassengers(current => current.map((item, passengerIndex) =>
-                                                      passengerIndex === index ? { ...item, name: event.currentTarget.value } : item))}
-                                                    maxLength={120}
-                                                    required
-                                                    disabled={submitting || passenger.booking !== null}
-                                                    autoComplete={index === 0 ? "name" : "off"}
-                                                    size="md"
-                                                  />
-                                                  <TextInput
-                                                    label="Email nhận xác nhận"
-                                                    type="email"
-                                                    placeholder="ban@example.com"
-                                                    value={passenger.email}
-                                                    onChange={event => setPassengers(current => current.map((item, passengerIndex) =>
-                                                      passengerIndex === index ? { ...item, email: event.currentTarget.value } : item))}
-                                                    maxLength={254}
-                                                    required
-                                                    disabled={submitting || passenger.booking !== null}
-                                                    autoComplete={index === 0 ? "email" : "off"}
-                                                    size="md"
-                                                  />
-                                                  {passenger.booking && (
-                                                    <Badge color="teal" variant="light" w="fit-content">
-                                                      Đã đặt · {passenger.booking.bookingCode}
-                                                    </Badge>
-                                                  )}
-                                                </Stack>
-                                              </Paper>
-                                            );
-                                          })}
-                                        </Stack>
-                                        <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="md">
-                                          <Box className="booking-addon-option booking-addon-baggage">
-                                            <Group gap="xs" mb={6}>
-                                              <IconLuggage size={19} />
-                                              <Text fw={700}>Hành lý ký gửi</Text>
-                                            </Group>
-                                            <Text size="sm" c="dimmed" mb="sm">Gói đã chọn áp dụng cho mỗi hành khách.</Text>
-                                            <Select
-                                              aria-label="Gói hành lý ký gửi"
-                                              placeholder="Không mua thêm"
-                                              data={baggageOptions}
-                                              value={baggageKg}
-                                              onChange={setBaggageKg}
-                                              clearable
-                                              disabled={submitting || passengers.some(passenger => passenger.booking !== null)}
-                                              size="sm"
-                                            />
-                                          </Box>
-                                          <Box className="booking-addon-option booking-addon-meal">
-                                            <Group gap="xs" mb={6}>
-                                              <IconToolsKitchen2 size={19} />
-                                              <Text fw={700}>Suất ăn</Text>
-                                            </Group>
-                                            <Text size="sm" c="dimmed" mb="sm">Suất ăn đã chọn áp dụng cho mỗi hành khách.</Text>
-                                            <Select
-                                              aria-label="Suất ăn"
-                                              placeholder="Không chọn suất ăn"
-                                              data={mealOptions}
-                                              value={mealCode}
-                                              onChange={setMealCode}
-                                              clearable
-                                              disabled={submitting || passengers.some(passenger => passenger.booking !== null)}
-                                              size="sm"
-                                            />
-                                          </Box>
-                                        </SimpleGrid>
-                                        <Divider />
-                                        <Paper className="booking-total-card" radius="lg" p="md" withBorder>
-                                          <Stack gap="xs">
-                                            <Group justify="space-between" align="center" wrap="wrap" gap="xs">
-                                              <Box>
-                                                <Text size="sm" fw={700}>
-                                                  {passengers.some(passenger => passenger.booking !== null)
-                                                    ? "Tổng giá trị các vé"
-                                                    : "Tổng thanh toán mô phỏng"}
-                                                </Text>
-                                                <Text size="xs" c="dimmed">
-                                                  {passengers.some(passenger => passenger.booking !== null)
-                                                    ? "Các vé đã thành công được giữ riêng"
-                                                    : "Chưa thu tiền thật"}
-                                                </Text>
-                                              </Box>
-                                              <Text size="xl" fw={850} c="blue.7">{money(bookingTotal)}</Text>
-                                            </Group>
-                                            <details className="booking-price-details">
-                                              <summary>
-                                                <span>Chi tiết giá vé</span>
-                                                <span className="booking-price-details-icon" aria-hidden="true" />
-                                              </summary>
-                                              <Stack className="booking-price-breakdown" gap="xs">
-                                                <Group justify="space-between" gap="sm" wrap="nowrap">
-                                                  <Text size="sm">Giá vé cơ bản · người lớn và trẻ em</Text>
-                                                  <Text size="sm" fw={600} ta="right">{money(selectedBaseFare)}</Text>
-                                                </Group>
-                                                <Group justify="space-between" gap="sm" wrap="nowrap">
-                                                  <Text size="sm">Phụ thu hạng vé</Text>
-                                                  <Text size="sm" fw={600} ta="right">{money(selectedCabinFee)}</Text>
-                                                </Group>
-                                                <Group justify="space-between" gap="sm" wrap="nowrap">
-                                                  <Text size="sm">Phụ thu vị trí ghế</Text>
-                                                  <Text size="sm" fw={600} ta="right">{money(selectedSeatFee)}</Text>
-                                                </Group>
-                                                <Group justify="space-between" gap="sm" wrap="nowrap">
-                                                  <Text size="sm">{baggageKg ? `Hành lý ký gửi · ${baggageKg} kg × ${selectedSeats.filter(Boolean).length}` : "Hành lý ký gửi · Không mua thêm"}</Text>
-                                                  <Text size="sm" fw={600} ta="right">{money(selectedBaggageFee * selectedSeats.filter(Boolean).length)}</Text>
-                                                </Group>
-                                                <Group justify="space-between" gap="sm" wrap="nowrap">
-                                                  <Text size="sm">{mealCode ? `Suất ăn · ${mealLabels[mealCode] ?? mealCode} × ${selectedSeats.filter(Boolean).length}` : "Suất ăn · Không chọn"}</Text>
-                                                  <Text size="sm" fw={600} ta="right">{money(selectedMealFee * selectedSeats.filter(Boolean).length)}</Text>
-                                                </Group>
-                                                <Group justify="space-between" gap="sm" wrap="nowrap">
-                                                  <Text size="sm">Phí phục vụ · Không thu riêng</Text>
-                                                  <Text size="sm" fw={600} ta="right">{money(0)}</Text>
-                                                </Group>
-                                              </Stack>
-                                            </details>
-                                          </Stack>
-                                        </Paper>
-                                        <Button
-                                          className="booking-confirm-button" color="blue"
-                                          type="submit"
-                                          size="md"
-                                          radius="md"
-                                          fullWidth
-                                          loading={submitting}
-                                          disabled={passengers.some(passenger =>
-                                            passenger.booking === null &&
-                                            (!passenger.name.trim() || !passenger.email.trim() || !passenger.seatId))}
-                                          rightSection={<IconArrowRight size={18} />}
-                                        >
-                                          {passengers.some(passenger => passenger.booking !== null) ? "Đặt các vé còn lại" : `Xác nhận ${passengers.length} vé`}
-                                        </Button>
-                                        <Text size="sm" c="dimmed" ta="center">
-                                          Mỗi vé được xác nhận riêng; vé đã thành công vẫn được giữ nếu vé khác gặp lỗi.
-                                        </Text>
-                                      </Stack>
-                                    </Box>
-                                  </Paper>
-                                )}
-                              </Stack>
-                            )}
-                            {/* BƯỚC 3: XÁC NHẬN ĐẶT VÉ THÀNH CÔNG */}
-                            {allPassengersBooked && (
-                              <Stack align="center" gap="md" py={{ base: "md", sm: "xl" }} role="status">
-                                <ThemeIcon color="teal" size={74} radius="xl" variant="light">
-                                  <IconCircleCheck size={44} />
-                                </ThemeIcon>
-                                <Stack align="center" gap={5}>
-                                  <Text tt="uppercase" fw={800} size="sm" c="teal.7" lts={1}>
-                                    Đặt {passengers.length} vé hoàn tất
-                                  </Text>
-                                  <Title order={3} size="xl" ta="center">Các chuyến đi đã được xác nhận</Title>
-                                  {infantCount > 0 && (
-                                    <Text size="sm" c="dimmed" ta="center">
-                                      Còn {infantCount} trẻ dưới 2 tuổi đi cùng người lớn · không cần ghế, miễn phí.
+                          className="booking-panel booking-seat-panel"
+                          component="section"
+                          withBorder
+                          radius="lg"
+                          p={{ base: "sm", sm: "md" }}
+                          shadow="xs"
+                          aria-labelledby="seat-passenger-title"
+                        >
+                          <Title order={2} size="lg" id="seat-passenger-title">Thông tin tìm kiếm</Title>
+
+                          <Divider />
+                          {searchForm.values && (
+                            <Paper p="sm" withBorder>
+                              <InfoRow label="Loại chuyến bay" value={type === "oneWay" ? "Một chiều" : "Khứ hồi"} />
+                              <InfoRow label="Nơi đi" value={getName(airportOptions, searchForm.values?.origin)} />
+                              <InfoRow label="Nơi đến" value={getName(airportOptions, searchForm.values?.destination)} />
+                              <InfoRow label="Thời gian khởi hành" value={searchForm.values.date ? dateFormater(searchForm.values.date, "dd/MM/yyyy") : dateFormater(searchForm.values.month, "MM/yyyy")} />
+                              <InfoRow label="Số lượng vé" value={
+                                <Stack>
+
+                                  {adultCount > 0 && (
+                                    <Text fw={500}>
+                                      {adultCount} người lớn
                                     </Text>
                                   )}
+
+                                  {childCount > 0 && (
+                                    <Text fw={500}>
+                                      {childCount} trẻ em
+                                    </Text>
+                                  )}
+
+                                  {infantCount > 0 && (
+                                    <Text fw={500}>
+                                      {infantCount} trẻ dưới 2 tuổi
+                                    </Text>
+                                  )}
+
                                 </Stack>
-                                {passengers.map((passenger, index) =>
-                                {
-                                  const booking = passenger.booking;
-                                  if (!booking) return null;
-                                  return (
-                                    <Paper key={booking.bookingId} className="booking-confirmed-ticket" withBorder radius="lg" p="lg" w="100%">
-                                      <Stack gap="sm">
-                                        <Group justify="space-between" align="center" wrap="wrap">
-                                          <Text fw={700}>{booking.passengerName}</Text>
-                                          <Badge color={passenger.passengerType === "CHILD" ? "blue" : "teal"} variant="light">
-                                            {passenger.passengerType === "CHILD" ? "Trẻ em · 75%" : "Người lớn"}
-                                          </Badge>
-                                          <Badge color="teal" variant="light" size="lg">{booking.status}</Badge>
-                                        </Group>
-                                        <Group gap="xs" justify="space-between" wrap="wrap">
-                                          <Text>{booking.flightNo} · Ghế {booking.seatNo}</Text>
-                                          <Badge color="blue" variant="light">
-                                            {cabinLabels[booking.cabinClass] ?? booking.cabinClass}
-                                          </Badge>
-                                        </Group>
-                                        <Group justify="space-between" align="center" wrap="wrap">
-                                          <Text size="sm" c="dimmed">Mã vé · {booking.bookingCode}</Text>
-                                          <Text fw={700} c="blue.7" size="lg">{money(booking.amount)}</Text>
-                                        </Group>
-                                        <Group justify="space-between" align="center" wrap="wrap">
-                                          <Group gap="xs">
-                                            <Badge color="blue" variant="light">
-                                              Phụ thu hạng {money(booking.cabinFee)}
-                                            </Badge>
-                                            <Badge color={booking.seatFee > 0 ? "orange" : "teal"} variant="light">
-                                              {booking.seatFee > 0 ? `Phụ thu ghế ${money(booking.seatFee)}` : "Ghế tiêu chuẩn"}
-                                            </Badge>
-                                            {booking.baggageKg && <Badge color="blue" variant="light">Hành lý {booking.baggageKg} kg</Badge>}
-                                            {booking.mealCode && <Badge color="grape" variant="light">{mealLabels[booking.mealCode] ?? "Suất ăn"}</Badge>}
-                                          </Group>
-                                          <Button component={Link} href={`/bookings/${booking.bookingId}`} size="xs" variant="subtle" rightSection={<IconArrowRight size={14} />}>
-                                            Chi tiết vé
-                                          </Button>
-                                        </Group>
-                                      </Stack>
-                                    </Paper>
-                                  );
-                                })}
-                              </Stack>
-                            )}
-                          </Stack>
+                              }
+                              />
+                            </Paper>
+                          )}
+
+                          <Divider my="xs" variant="dashed" />
+
+                          {flight && (
+                            <Paper p="sm" withBorder bg="var(--mantine-color-teal-0)">
+                              <Paper className="booking-flight-summary" p="md" radius="lg" withBorder>
+                                <Group gap="md" align="center" wrap="nowrap">
+                                  <ThemeIcon size={42} radius="md" color="blue" variant="light" style={{ flexShrink: 0 }}>
+                                    <IconPlane size={23} />
+                                  </ThemeIcon>
+                                  <Stack gap={3} style={{ flex: 1, minWidth: 0 }}>
+                                    <Group justify="space-between" >
+                                      <Text fw={500}>
+                                        {flight.flightNo}
+                                      </Text>
+                                      <Text fw={500}>
+                                        {flight.origin} → {flight.destination}
+                                      </Text>
+                                    </Group>
+                                    <Text c="dimmed" size="sm" lineClamp={2}>
+                                      {flight.originCity} → {flight.destinationCity}
+                                    </Text>
+                                  </Stack>
+
+                                </Group>
+                              </Paper>
+                              <InfoRow label="Ngày khởi hành" value={dateFormater(flight.departureTime, "dd/MM/yyyy")} />
+                              <InfoRow label="Giờ cất cánh" value={dateFormater(flight.departureTime, "HH:mm")} />
+                              <InfoRow label="Giờ hạ cánh" value={dateFormater(flight.arrivalTime, "HH:mm")} />
+                              <Divider variant="dashed" />
+                              {passengers?.map((passenger) => {
+                                const booking = passenger.booking
+                                if (!booking) return null;
+                                return (
+
+                                  <InfoRow label="Dịch vụ kèm theo" value={
+                                    <Stack gap="xs">
+                                      {booking.baggageKg && (
+
+                                        <Text>
+                                          Hành lý ký gửi: {booking.baggageKg} kg
+                                        </Text>
+                                      )}
+
+                                      {booking.mealCode && (
+
+                                        <Text>
+                                          Suất ăn: {mealLabels[booking.mealCode] ?? "Suất ăn"}
+                                        </Text>
+                                      )}
+
+                                    </Stack>
+                                  }
+                                  />
+                                )
+                              })}
+                            </Paper>
+                          )}
+
                         </Paper>
                       </Grid.Col>
                     </Grid>
+
+
+                    {/* BƯỚC 3: XÁC NHẬN ĐẶT VÉ THÀNH CÔNG */}
+                    {allPassengersBooked && (
+                      <Stack align="center" gap="md" py={{ base: "md", sm: "xl" }} role="status">
+                        <ThemeIcon color="teal" size={74} radius="xl" variant="light">
+                          <IconCircleCheck size={44} />
+                        </ThemeIcon>
+                        <Stack align="center" gap={5}>
+                          <Text tt="uppercase" fw={800} size="sm" c="teal.7" lts={1}>
+                            Đặt {passengers.length} vé hoàn tất
+                          </Text>
+                          <Title order={3} size="xl" ta="center">Các chuyến đi đã được xác nhận</Title>
+                          {infantCount > 0 && (
+                            <Text size="sm" c="dimmed" ta="center">
+                              Còn {infantCount} trẻ dưới 2 tuổi đi cùng người lớn · không cần ghế, miễn phí.
+                            </Text>
+                          )}
+                        </Stack>
+                        {passengers.map((passenger, index) => {
+                          const booking = passenger.booking;
+                          if (!booking) return null;
+                          return (
+                            <Paper key={booking.bookingId} className="booking-confirmed-ticket" withBorder radius="lg" p="lg" w="100%">
+                              <Stack gap="sm">
+                                <Group justify="space-between" align="center" wrap="wrap">
+                                  <Text fw={700}>{booking.passengerName}</Text>
+                                  <Badge color={passenger.passengerType === "CHILD" ? "blue" : "teal"} variant="light">
+                                    {passenger.passengerType === "CHILD" ? "Trẻ em · 75%" : "Người lớn"}
+                                  </Badge>
+                                  <Badge color="teal" variant="light" size="lg">{booking.status}</Badge>
+                                </Group>
+                                <Group gap="xs" justify="space-between" wrap="wrap">
+                                  <Text>{booking.flightNo} · Ghế {booking.seatNo}</Text>
+                                  <Badge color="blue" variant="light">
+                                    {cabinLabels[booking.cabinClass] ?? booking.cabinClass}
+                                  </Badge>
+                                </Group>
+                                <Group justify="space-between" align="center" wrap="wrap">
+                                  <Text size="sm" c="dimmed">Mã vé · {booking.bookingCode}</Text>
+                                  <Text fw={700} c="blue.7" size="lg">{money(booking.amount)}</Text>
+                                </Group>
+                                <Group justify="space-between" align="center" wrap="wrap">
+                                  <Group gap="xs">
+                                    <Badge color="blue" variant="light">
+                                      Phụ thu hạng {money(booking.cabinFee)}
+                                    </Badge>
+                                    <Badge color={booking.seatFee > 0 ? "orange" : "teal"} variant="light">
+                                      {booking.seatFee > 0 ? `Phụ thu ghế ${money(booking.seatFee)}` : "Ghế tiêu chuẩn"}
+                                    </Badge>
+                                    {booking.baggageKg && <Badge color="blue" variant="light">Hành lý {booking.baggageKg} kg</Badge>}
+                                    {booking.mealCode && <Badge color="grape" variant="light">{mealLabels[booking.mealCode] ?? "Suất ăn"}</Badge>}
+                                  </Group>
+                                  <Button component={Link} href={`/bookings/${booking.bookingId}`} size="xs" variant="subtle" rightSection={<IconArrowRight size={14} />}>
+                                    Chi tiết vé
+                                  </Button>
+                                </Group>
+                              </Stack>
+                            </Paper>
+                          );
+                        })}
+                      </Stack>
+                    )}
                   </Stack>
                 )}
               </Stack>
             </Paper>
           </Stack>
+
+
         </Stack>
       </Container>
     </Box >

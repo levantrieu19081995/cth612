@@ -93,13 +93,37 @@ const theme = createTheme({
   components: {
     Text: {
       defaultProps: {
-        size: "sm"
+        fontSize: "var(--mantine-font-size-sm)"
       }
     },
 
     Select: {
       defaultProps: {
-        size: "sm"
+        size: "sm",
+        styles: {
+          label: {
+            fontSize: "var(--mantine-font-size-sm)",
+            fontWeight: 500
+          },
+          input: {
+            fontSize: "var(--mantine-font-size-sm)"
+          }
+        }
+      }
+    },
+
+    TextInput: {
+      defaultProps: {
+        size: "sm",
+        styles: {
+          label: {
+            fontSize: "var(--mantine-font-size-sm)",
+            fontWeight: 500
+          },
+          input: {
+            fontSize: "var(--mantine-font-size-sm)"
+          }
+        }
       }
     },
 
