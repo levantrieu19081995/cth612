@@ -1,11 +1,9 @@
 package vn.ctu.distributedflight.service;
 
-import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.util.*;
 import tools.jackson.databind.json.JsonMapper;
-import vn.ctu.distributedflight.dto.BookingDtos.CreateBooking;
-import vn.ctu.distributedflight.dto.BookingDtos.GroupBookingRequest;
+import vn.ctu.distributedflight.dto.BookingDtos.*;
 
 public final class RequestIdentity {
     private RequestIdentity() {}
@@ -30,5 +28,21 @@ public final class RequestIdentity {
             byte[] bytes=JsonMapper.builder().build().writeValueAsBytes(Arrays.asList(request.flightId().toString(),passengers));
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
         } catch(Exception ex) { throw new IllegalStateException("Cannot fingerprint group booking request",ex); }
+    }
+    public static String fingerprint(CreateBookingGroup request) {
+        try {
+            List<Object> parts=new ArrayList<>();
+            request.flightIds().forEach(id->parts.add(id.toString()));
+            parts.add(request.contactEmail().trim());
+            parts.add(request.payment().amount().stripTrailingZeros().toPlainString());
+            parts.add(request.payment().currency());
+            for(TripPassenger passenger:request.passengers()) {
+                parts.add(Arrays.asList(passenger.passengerName().trim(),passenger.passengerType(),
+                    Objects.toString(passenger.baggageKg(),""),Objects.toString(passenger.mealCode(),""),
+                    Objects.toString(passenger.infantName(),""),passenger.seatIds().stream().map(UUID::toString).toList()));
+            }
+            byte[] bytes=JsonMapper.builder().build().writeValueAsBytes(parts);
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+        } catch(Exception ex) { throw new IllegalStateException("Cannot fingerprint booking group request",ex); }
     }
 }

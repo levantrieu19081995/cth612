@@ -1,7 +1,6 @@
 package vn.ctu.distributedflight.service;
 import java.math.BigDecimal;
 import java.sql.SQLException;
-import java.math.BigDecimal;
 import java.time.*;
 import java.util.*;
 import tools.jackson.core.JacksonException;
@@ -111,6 +110,7 @@ public class BookingService {
         }
 
         List<Booking> confirmed=new ArrayList<>();
+        BigDecimal total=BigDecimal.ZERO;
         for(int index=0;index<request.passengers().size();index++) {
             GroupPassenger passenger=request.passengers().get(index);
             Seat seat=passenger.seatId()==null?null:lockedSeats.get(passenger.seatId());
@@ -118,7 +118,8 @@ public class BookingService {
             BigDecimal amount=ticketFare(passenger.passengerType())
                 .add(passenger.baggageKg()==null?BigDecimal.ZERO:BAGGAGE_FEES.get(passenger.baggageKg()))
                 .add(passenger.mealCode()==null?BigDecimal.ZERO:MEAL_FEES.get(passenger.mealCode()))
-                .add(seatFee);
+                .add(seatFee)
+                .add(seat==null?BigDecimal.ZERO:BookingPolicy.cabinPrice(seat.cabinClass()));
             UUID id=UUID.randomUUID();
             String code="BK-"+id.toString().replace("-","").toUpperCase(Locale.ROOT);
             repository.insertGroupBooking(id,code,request.flightId(),passenger.seatId(),passenger.passengerName(),
@@ -127,7 +128,9 @@ public class BookingService {
             repository.insertPayment(id,amount,"VND",now);
             insertBookingEvents(id,request.flightId(),seat==null?null:seat.seatNo(),code,passenger,amount,now);
             confirmed.add(repository.booking(id).orElseThrow(()->new IllegalStateException("Inserted booking missing")));
+            total=total.add(amount);
         }
+        repository.completeGroupRequest(request.requestId(),request.passengers().get(0).passengerEmail().trim(),total);
         return List.copyOf(confirmed);
     }
     private void insertBookingEvents(UUID id,UUID flightId,String seatNo,String code,GroupPassenger passenger,
@@ -239,17 +242,160 @@ public class BookingService {
         bookingPayload.put("seatFee",seatFee);
         bookingPayload.put("passengerType",request.passengerType());
         bookingPayload.put("totalAmount",request.payment().amount());
+        writeEvents(id,bookingPayload,now);
+        return repository.booking(id).orElseThrow(()->new IllegalStateException("Inserted booking missing"));
+    }
+    private void writeEvents(UUID bookingId,Map<String,Object> bookingPayload,Instant now) {
         String[] types={"BOOKING_CREATED","SEAT_RESERVED","PAYMENT_RECORDED","BOOKING_CONFIRMED"};
         for(int i=0;i<types.length;i++) {
             UUID eventId=UUID.randomUUID(); Instant occurred=now.plusMillis(i);
             try {
                 String payload=json.writeValueAsString(Map.of("eventId",eventId,"eventType",types[i],
-                    "aggregateType","BOOKING","aggregateId",id,"occurredAt",occurred.toString(),"payloadVersion",1,
+                    "aggregateType","BOOKING","aggregateId",bookingId,"occurredAt",occurred.toString(),"payloadVersion",1,
                     "payload",bookingPayload));
-                repository.insertEvent(eventId,id,types[i],payload,occurred);
+                repository.insertEvent(eventId,bookingId,types[i],payload,occurred);
             } catch(JacksonException ex) { throw new IllegalStateException("Cannot encode booking event",ex); }
         }
-        return repository.booking(id).orElseThrow(()->new IllegalStateException("Inserted booking missing"));
+    }
+
+    // ---- Party / round-trip booking: one transaction, one group code ----
+    public BookingGroup group(String code) {
+        return repository.groupByCode(code==null?"":code.trim().toUpperCase(Locale.ROOT)).orElseThrow(()->
+            new ApiException(HttpStatus.NOT_FOUND,"BOOKING_GROUP_NOT_FOUND","Không tìm thấy mã đặt chỗ."));
+    }
+    public BookingGroup groupByRequest(UUID requestId) {
+        return repository.groupByRequest(requestId).orElseThrow(()->
+            new ApiException(HttpStatus.NOT_FOUND,"BOOKING_GROUP_NOT_FOUND","Yêu cầu chưa có mã đặt chỗ được xác nhận."));
+    }
+    public BookingGroup createGroup(CreateBookingGroup request) {
+        validateGroupShape(request);
+        for(int attempt=0;attempt<5;attempt++) {
+            try { return Objects.requireNonNull(transaction.execute(status->createGroupInTransaction(request))); }
+            catch(RuntimeException ex) {
+                if(sqlState(ex,"23505")) {
+                    var existing=repository.groupByRequest(request.requestId());
+                    if(existing.isPresent()) return previousGroup(request,existing.get());
+                    if(repository.findGroupRequest(request.requestId()).isPresent())
+                        throw new ApiException(HttpStatus.CONFLICT,"IDEMPOTENCY_KEY_REUSED","Yêu cầu đã được dùng với thông tin khác.");
+                }
+                if(!isSerializationFailure(ex)) throw ex;
+                if(attempt==4) throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,"TRANSACTION_RETRY_EXHAUSTED","Database đang bận. Vui lòng thử lại.");
+                try { Thread.sleep(25L*(attempt+1)); }
+                catch(InterruptedException interrupted) {
+                    Thread.currentThread().interrupt();
+                    throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,"REQUEST_INTERRUPTED","Yêu cầu bị gián đoạn.");
+                }
+            }
+        }
+        throw new IllegalStateException("Unreachable retry branch");
+    }
+    private void validateGroupShape(CreateBookingGroup request) {
+        int legs=request.flightIds().size();
+        if(!"VND".equals(request.payment().currency()))
+            throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_PAYMENT","Đơn vị thanh toán phải là VND.");
+        if(legs==2&&request.flightIds().get(0).equals(request.flightIds().get(1)))
+            throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_TRIP","Chuyến đi và chuyến về phải khác nhau.");
+        Set<UUID> seats=new HashSet<>();
+        for(TripPassenger p:request.passengers()) {
+            try {
+                BookingPolicy.baggagePrice(p.baggageKg());
+                BookingPolicy.mealPrice(p.mealCode());
+            } catch(IllegalArgumentException ex) { throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_ANCILLARY",ex.getMessage()); }
+            if(p.seatIds().size()!=legs)
+                throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_SEATS","Mỗi hành khách phải chọn đúng "+legs+" ghế (mỗi chặng một ghế).");
+            if(p.infantName()!=null&&!"ADULT".equals(p.passengerType()))
+                throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_INFANT","Chỉ người lớn mới được kèm em bé (tối đa 1 em bé mỗi người lớn).");
+            for(UUID seat:p.seatIds())
+                if(!seats.add(seat)) throw new ApiException(HttpStatus.BAD_REQUEST,"DUPLICATE_SEAT","Một ghế không thể gán cho hai hành khách.");
+        }
+        if(request.passengers().stream().noneMatch(p->"ADULT".equals(p.passengerType())))
+            throw new ApiException(HttpStatus.BAD_REQUEST,"ADULT_REQUIRED","Cần ít nhất một người lớn trong đoàn.");
+    }
+    private BookingGroup createGroupInTransaction(CreateBookingGroup request) {
+        String fingerprint=RequestIdentity.fingerprint(request);
+        var existingKey=repository.findGroupRequest(request.requestId());
+        if(existingKey.isPresent()&&!Objects.equals(existingKey.get().fingerprint(),fingerprint))
+            throw new ApiException(HttpStatus.CONFLICT,"IDEMPOTENCY_KEY_REUSED","Yêu cầu đã được dùng với thông tin khác.");
+        var previous=repository.groupByRequest(request.requestId());
+        if(previous.isPresent()) return previousGroup(request,previous.get());
+        int legs=request.flightIds().size();
+        List<BookingRepository.FlightLeg> flights=new ArrayList<>();
+        for(UUID flightId:request.flightIds()) {
+            var leg=repository.flightLeg(flightId).orElseThrow(()->
+                new ApiException(HttpStatus.NOT_FOUND,"FLIGHT_NOT_FOUND","Không tìm thấy chuyến bay."));
+            if(!leg.bookable()) throw new ApiException(HttpStatus.CONFLICT,"FLIGHT_NOT_BOOKABLE","Chuyến bay không còn nhận đặt vé.");
+            flights.add(leg);
+        }
+        if(legs==2) {
+            var out=flights.get(0); var back=flights.get(1);
+            if(!out.origin().equals(back.destination())||!out.destination().equals(back.origin()))
+                throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_TRIP","Chuyến về phải đi ngược lại chặng đi.");
+            if(!back.departure().isAfter(out.arrival()))
+                throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_TRIP","Chuyến về phải khởi hành sau khi chuyến đi đến nơi.");
+        }
+        // Lock every seat in a fixed order so two overlapping parties cannot wait on each other.
+        record Pick(int passenger,int leg,UUID seatId) {}
+        List<Pick> picks=new ArrayList<>();
+        for(int p=0;p<request.passengers().size();p++)
+            for(int l=0;l<legs;l++) picks.add(new Pick(p,l,request.passengers().get(p).seatIds().get(l)));
+        Map<Pick,Seat> seats=new HashMap<>();
+        for(Pick pick:picks.stream().sorted(Comparator.comparing(x->x.seatId().toString())).toList()) {
+            Seat seat=repository.lockSeat(request.flightIds().get(pick.leg()),pick.seatId()).orElseThrow(()->
+                new ApiException(HttpStatus.NOT_FOUND,"SEAT_NOT_FOUND","Ghế không thuộc chuyến bay đã chọn."));
+            if(!"AVAILABLE".equals(seat.status()))
+                throw new ApiException(HttpStatus.CONFLICT,"SEAT_ALREADY_BOOKED","Ghế "+seat.seatNo()+" đã được đặt.");
+            seats.put(pick,seat);
+        }
+        Map<Pick,BigDecimal> fees=new HashMap<>(), prices=new HashMap<>();
+        BigDecimal total=BigDecimal.ZERO;
+        for(Pick pick:picks) {
+            TripPassenger p=request.passengers().get(pick.passenger());
+            Seat seat=seats.get(pick);
+            try {
+                fees.put(pick,BookingPolicy.seatPrice(seat.seatNo()));
+                BigDecimal price=BookingPolicy.totalPrice(p.baggageKg(),p.mealCode(),seat.seatNo(),seat.cabinClass(),p.passengerType());
+                prices.put(pick,price); total=total.add(price);
+            } catch(IllegalArgumentException ex) { throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_ANCILLARY",ex.getMessage()); }
+        }
+        if(request.payment().amount().compareTo(total)!=0)
+            throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_PAYMENT","Tổng thanh toán không khớp với giá vé, ghế và dịch vụ đã chọn.");
+        for(Pick pick:picks)
+            if(!repository.reserve(request.flightIds().get(pick.leg()),pick.seatId()))
+                throw new ApiException(HttpStatus.CONFLICT,"SEAT_ALREADY_BOOKED","Ghế "+seats.get(pick).seatNo()+" đã được đặt.");
+        UUID groupId=UUID.randomUUID();
+        String groupCode="GR-"+groupId.toString().replace("-","").substring(0,10).toUpperCase(Locale.ROOT);
+        Instant now=Instant.now();
+        repository.insertGroup(groupId,groupCode,legs==2?"ROUND_TRIP":"ONE_WAY",request,total,fingerprint,now);
+        for(Pick pick:picks) {
+            TripPassenger p=request.passengers().get(pick.passenger());
+            Seat seat=seats.get(pick);
+            UUID id=UUID.randomUUID();
+            String code="BK-"+id.toString().replace("-","").toUpperCase(Locale.ROOT);
+            UUID flightId=request.flightIds().get(pick.leg());
+            repository.insertGroupTicket(id,code,groupId,pick.leg()+1,pick.passenger()+1,flightId,pick.seatId(),p,request.contactEmail(),fees.get(pick),now);
+            repository.insertPayment(id,prices.get(pick),request.payment().currency(),now);
+            Map<String,Object> payload=new LinkedHashMap<>();
+            payload.put("flightId",flightId);
+            payload.put("seatNo",seat.seatNo());
+            payload.put("bookingCode",code);
+            payload.put("groupCode",groupCode);
+            payload.put("tripType",legs==2?"ROUND_TRIP":"ONE_WAY");
+            payload.put("legNo",pick.leg()+1);
+            payload.put("baggageKg",p.baggageKg());
+            payload.put("mealCode",p.mealCode());
+            payload.put("seatFee",fees.get(pick));
+            payload.put("passengerType",p.passengerType());
+            payload.put("infantName",p.infantName());
+            payload.put("totalAmount",prices.get(pick));
+            writeEvents(id,payload,now);
+        }
+        return repository.groupByCode(groupCode).orElseThrow(()->new IllegalStateException("Inserted booking group missing"));
+    }
+    private BookingGroup previousGroup(CreateBookingGroup request,BookingGroup existing) {
+        String stored=repository.groupFingerprint(request.requestId()).orElse(null);
+        if(!Objects.equals(stored,RequestIdentity.fingerprint(request)))
+            throw new ApiException(HttpStatus.CONFLICT,"IDEMPOTENCY_KEY_REUSED","Yêu cầu đã được dùng với thông tin khác.");
+        return existing;
     }
     private void requireFlight(UUID id) {
         if(!repository.flightExists(id)) throw new ApiException(HttpStatus.NOT_FOUND,"FLIGHT_NOT_FOUND","Không tìm thấy chuyến bay.");

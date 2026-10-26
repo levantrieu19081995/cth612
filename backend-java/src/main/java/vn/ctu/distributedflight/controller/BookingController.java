@@ -55,6 +55,26 @@ public class BookingController {
     public List<Booking> createGroup(@RequestBody @Valid GroupBookingRequest request) {
         return service.createGroup(request);
     }
+    @Operation(summary="Đặt vé cho cả đoàn / khứ hồi (một mã đặt chỗ)",description="""
+        Một giao dịch CockroachDB duy nhất: tất cả vé cùng thành công hoặc cùng bị hủy.
+        Trả về một groupCode dùng chung cho cả đoàn và cả hai chiều; mỗi vé vẫn có bookingCode riêng.
+        flightIds: 1 chuyến = một chiều; 2 chuyến [đi, về] = khứ hồi. Chuyến về phải đi ngược chặng đi và khởi hành sau khi chuyến đi đến nơi.
+        passengers: 1 đến 9 người, cần ít nhất 1 người lớn. seatIds của mỗi người có đúng một ghế cho mỗi chuyến, theo thứ tự flightIds.
+        baggageKg và mealCode áp dụng cho từng chặng. infantName chỉ cho ADULT, tối đa 1 em bé mỗi người lớn; em bé ngồi cùng, không chiếm ghế, miễn phí.
+        Giá mỗi vé tính như POST /api/bookings; payment.amount phải bằng tổng của tất cả vé do server tính.
+        requestId bắt buộc: gửi lại cùng requestId trả về đúng đoàn cũ; khác nội dung → 409 IDEMPOTENCY_KEY_REUSED.
+        Lỗi: SEAT_ALREADY_BOOKED, INVALID_PAYMENT, INVALID_TRIP, INVALID_INFANT, INVALID_SEATS, DUPLICATE_SEAT, ADULT_REQUIRED.""")
+    @PostMapping("/booking-groups")
+    public ResponseEntity<BookingGroup> createGroup(@RequestBody @Valid CreateBookingGroup request) {
+        BookingGroup result=service.createGroup(request);
+        return ResponseEntity.created(URI.create("/api/booking-groups/"+result.groupCode())).body(result);
+    }
+    @Operation(summary="Xem một đoàn theo mã đặt chỗ",description="404 BOOKING_GROUP_NOT_FOUND nếu không có. tickets sắp theo chặng rồi theo thứ tự hành khách.")
+    @GetMapping("/booking-groups/{groupCode}")
+    public BookingGroup group(@PathVariable String groupCode) { return service.group(groupCode); }
+    @Operation(summary="Tìm đoàn theo requestId",description="Kiểm tra yêu cầu đã được xác nhận khi mất kết nối sau lúc gửi đặt vé đoàn.")
+    @GetMapping("/booking-groups/requests/{requestId}")
+    public BookingGroup groupByRequest(@PathVariable UUID requestId) { return service.groupByRequest(requestId); }
     @Operation(summary="Xem một vé",description="404 BOOKING_NOT_FOUND nếu không có.")
     @GetMapping("/bookings/{bookingId}")
     public Booking booking(@PathVariable UUID bookingId) { return service.booking(bookingId); }

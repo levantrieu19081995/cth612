@@ -99,7 +99,7 @@ class BookingServiceTest {
         assertEquals(3,result.size());
         org.mockito.ArgumentCaptor<BigDecimal> amounts=org.mockito.ArgumentCaptor.forClass(BigDecimal.class);
         verify(repository,times(3)).insertPayment(any(),amounts.capture(),eq("VND"),any());
-        assertEquals(List.of(new BigDecimal("1840000"),new BigDecimal("1250000"),BigDecimal.ZERO),
+        assertEquals(List.of(new BigDecimal("1840000"),new BigDecimal("1250000"),BigDecimal.ZERO).stream().map(BigDecimal::stripTrailingZeros).toList(),
             amounts.getAllValues().stream().map(BigDecimal::stripTrailingZeros).toList());
         org.mockito.ArgumentCaptor<UUID> seats=org.mockito.ArgumentCaptor.forClass(UUID.class);
         verify(repository,times(3)).insertGroupBooking(any(),anyString(),eq(flight),seats.capture(),anyString(),anyString(),

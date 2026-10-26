@@ -89,8 +89,16 @@ public class BookingRepository {
             request.requestId(),RequestIdentity.fingerprint(request),request.baggageKg(),request.mealCode(),seatFee,request.passengerType());
     }
     public void insertGroupRequest(UUID requestId,UUID flightId,String fingerprint,Instant time) {
-        jdbc.update("INSERT INTO booking_groups(request_id,flight_id,request_fingerprint,created_at) VALUES (?,?,?,?)",
-            requestId,flightId,fingerprint,Timestamp.from(time));
+        String code="GR-"+requestId.toString().replace("-","").substring(0,10).toUpperCase(Locale.ROOT);
+        jdbc.update("""
+            INSERT INTO booking_groups(request_id,flight_id,request_fingerprint,created_at,id,group_code,
+                trip_type,contact_email,total_amount,currency,status)
+            VALUES (?,?,?,?,?,?,'ONE_WAY','',0,'VND','PENDING')
+            """,requestId,flightId,fingerprint,Timestamp.from(time),requestId,code);
+    }
+    public void completeGroupRequest(UUID requestId,String contactEmail,BigDecimal total) {
+        jdbc.update("UPDATE booking_groups SET contact_email=?,total_amount=?,status='CONFIRMED' WHERE request_id=?",
+            contactEmail,total,requestId);
     }
     public Optional<ExistingGroupRequest> findGroupRequest(UUID requestId) {
         if(requestId==null) return Optional.empty();
@@ -103,10 +111,11 @@ public class BookingRepository {
             BigDecimal seatFee,UUID groupRequestId,int groupIndex,Instant time) {
         jdbc.update("""
             INSERT INTO bookings(id,booking_code,flight_id,seat_id,passenger_name,passenger_email,status,created_at,
-                                 passenger_type,baggage_kg,meal_code,seat_fee,group_request_id,group_index)
-            VALUES (?,?,?,?,?,?,'CONFIRMED',?,?,?,?,?,?,?)
+                                 passenger_type,baggage_kg,meal_code,seat_fee,group_request_id,group_index,
+                                 group_id,leg_no,passenger_no)
+            VALUES (?,?,?,?,?,?,'CONFIRMED',?,?,?,?,?,?,?,?,1,?)
             """,id,code,flightId,seatId,passengerName.trim(),passengerEmail.trim(),Timestamp.from(time),
-            passengerType.name(),baggageKg,mealCode,seatFee,groupRequestId,groupIndex);
+            passengerType.name(),baggageKg,mealCode,seatFee,groupRequestId,groupIndex,groupRequestId,groupIndex+1);
     }
     public void insertPayment(UUID bookingId,BigDecimal amount,String currency,Instant time) {
         jdbc.update("""
@@ -123,27 +132,71 @@ public class BookingRepository {
             """,eventId,bookingId,type,payload,Timestamp.from(time));
     }
     public Optional<Booking> booking(UUID id) {
+        return tickets("WHERE b.id=?",id).stream().findFirst();
+    }
+    private List<Booking> tickets(String where,Object... args) {
         return jdbc.query("""
-            SELECT b.*,f.flight_no,s.seat_no,s.cabin_class,p.amount,p.currency FROM bookings b
-            JOIN flights f ON b.flight_id=f.id JOIN flight_seats s ON b.seat_id=s.id
-            rs.getString("seat_no"),rs.getString("passenger_name"),rs.getString("passenger_email"),
-            rs.getString("status"),rs.getTimestamp("created_at").toInstant(),rs.getBigDecimal("amount"),rs.getString("currency"),
-            PassengerType.valueOf(rs.getString("passenger_type")),nullableInt(rs,"baggage_kg"),rs.getString("meal_code"),
-            rs.getBigDecimal("seat_fee"),rs.getObject("group_request_id",UUID.class)),id)
-=======
-            nullableInteger(rs,"baggage_kg"),rs.getString("meal_code"),rs.getBigDecimal("seat_fee"),
-            rs.getString("passenger_type"),rs.getString("cabin_class"),
-            BookingPolicy.cabinPrice(rs.getString("cabin_class"))),id)
-            .stream().findFirst();
+            SELECT b.*,f.flight_no,s.seat_no,s.cabin_class,p.amount,p.currency,g.group_code FROM bookings b
+            JOIN flights f ON b.flight_id=f.id LEFT JOIN flight_seats s ON b.seat_id=s.id
+            JOIN payments p ON p.booking_id=b.id LEFT JOIN booking_groups g ON g.id=b.group_id
+            """+where,(rs,n)->{
+                String cabinClass=rs.getString("cabin_class");
+                return new Booking(rs.getObject("id",UUID.class),rs.getString("booking_code"),
+                    rs.getObject("flight_id",UUID.class),rs.getString("flight_no"),rs.getObject("seat_id",UUID.class),
+                    rs.getString("seat_no"),rs.getString("passenger_name"),rs.getString("passenger_email"),
+                    rs.getString("status"),rs.getTimestamp("created_at").toInstant(),rs.getBigDecimal("amount"),rs.getString("currency"),
+                    nullableInteger(rs,"baggage_kg"),rs.getString("meal_code"),rs.getBigDecimal("seat_fee"),
+                    rs.getString("passenger_type"),cabinClass,cabinClass==null?BigDecimal.ZERO:BookingPolicy.cabinPrice(cabinClass),
+                    rs.getString("group_code"),nullableInteger(rs,"leg_no"),rs.getString("infant_name"),
+                    rs.getObject("group_request_id",UUID.class));
+            },args);
     }
     public List<Booking> bookingsForGroup(UUID requestId) {
-        return jdbc.query("""
-            SELECT b.id FROM bookings b WHERE b.group_request_id=? ORDER BY b.group_index
-            """,(rs,n)->booking(rs.getObject("id",UUID.class)).orElseThrow(),requestId);
+        return tickets("WHERE b.group_request_id=? ORDER BY b.group_index",requestId);
     }
-    private Integer nullableInt(ResultSet rs,String column) throws SQLException {
-        int value=rs.getInt(column);
-        return rs.wasNull()?null:value;
+    public record FlightLeg(UUID id,String origin,String destination,Instant departure,Instant arrival,boolean bookable) {}
+    public Optional<FlightLeg> flightLeg(UUID id) {
+        return jdbc.query("""
+            SELECT f.id,a.code origin,b.code destination,f.departure_time,f.arrival_time,
+            (f.status='SCHEDULED' AND f.departure_time>now()) bookable
+            FROM flights f JOIN airports a ON a.id=f.origin_airport_id JOIN airports b ON b.id=f.destination_airport_id
+            WHERE f.id=?
+            """,(rs,n)->new FlightLeg(rs.getObject("id",UUID.class),rs.getString("origin"),rs.getString("destination"),
+            rs.getTimestamp("departure_time").toInstant(),rs.getTimestamp("arrival_time").toInstant(),rs.getBoolean("bookable")),id)
+            .stream().findFirst();
+    }
+    public void insertGroup(UUID id,String code,String tripType,CreateBookingGroup request,BigDecimal total,String fingerprint,Instant time) {
+        jdbc.update("""
+            INSERT INTO booking_groups(id,group_code,trip_type,contact_email,total_amount,currency,status,
+                request_id,request_fingerprint,created_at,flight_id)
+            VALUES (?,?,?,?,?,?,'CONFIRMED',?,?,?,?)
+            """,id,code,tripType,request.contactEmail().trim(),total,request.payment().currency(),
+            request.requestId(),fingerprint,Timestamp.from(time),request.flightIds().get(0));
+    }
+    public void insertGroupTicket(UUID id,String code,UUID groupId,int legNo,int passengerNo,UUID flightId,UUID seatId,
+            TripPassenger passenger,String email,BigDecimal seatFee,Instant time) {
+        jdbc.update("""
+            INSERT INTO bookings(id,booking_code,flight_id,seat_id,passenger_name,passenger_email,status,created_at,
+                baggage_kg,meal_code,seat_fee,passenger_type,group_id,leg_no,passenger_no,infant_name)
+            VALUES (?,?,?,?,?,?,'CONFIRMED',?,?,?,?,?,?,?,?,?)
+            """,id,code,flightId,seatId,passenger.passengerName().trim(),email.trim(),Timestamp.from(time),
+            passenger.baggageKg(),passenger.mealCode(),seatFee,passenger.passengerType(),groupId,legNo,passengerNo,
+            passenger.infantName()==null?null:passenger.infantName().trim());
+    }
+    private Optional<BookingGroup> group(String where,Object arg) {
+        return jdbc.query("SELECT * FROM booking_groups WHERE ("+where+") AND group_code IS NOT NULL",(rs,n)->
+            new BookingGroup(rs.getObject("id",UUID.class),rs.getString("group_code"),rs.getString("trip_type"),
+                rs.getString("contact_email"),rs.getString("status"),rs.getTimestamp("created_at").toInstant(),
+                rs.getBigDecimal("total_amount"),rs.getString("currency"),List.of()),arg)
+            .stream().findFirst().map(group->new BookingGroup(group.groupId(),group.groupCode(),group.tripType(),
+                group.contactEmail(),group.status(),group.createdAt(),group.totalAmount(),group.currency(),
+                tickets("WHERE b.group_id=? ORDER BY b.leg_no,b.passenger_no",group.groupId())));
+    }
+    public Optional<BookingGroup> groupByCode(String code) { return group("group_code=?",code); }
+    public Optional<BookingGroup> groupByRequest(UUID requestId) { return group("request_id=?",requestId); }
+    public Optional<String> groupFingerprint(UUID requestId) {
+        return jdbc.query("SELECT request_fingerprint FROM booking_groups WHERE request_id=?",
+            (rs,n)->rs.getString(1),requestId).stream().findFirst();
     }
 
     private Integer nullableInteger(ResultSet rs,String column) throws SQLException {

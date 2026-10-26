@@ -83,11 +83,11 @@ class BookingDatabaseTest {
         List<Booking> bookings=service.createGroup(request);
 
         assertEquals(2,bookings.size());
-        assertEquals(PassengerType.ADULT,bookings.get(0).passengerType());
-        assertEquals(PassengerType.INFANT,bookings.get(1).passengerType());
+        assertEquals("ADULT",bookings.get(0).passengerType());
+        assertEquals("INFANT",bookings.get(1).passengerType());
         assertNull(bookings.get(1).seatId());
         assertNull(bookings.get(1).seatNo());
-        assertEquals(new BigDecimal("1600000.00"),bookings.get(0).amount());
+        assertEquals(new BigDecimal("1500000.00"),bookings.get(0).amount());
         assertEquals(0,BigDecimal.ZERO.compareTo(bookings.get(1).amount()));
         assertEquals(2L,jdbc.queryForObject("SELECT count(*) FROM bookings WHERE group_request_id=?",Long.class,requestId));
         assertEquals(8L,jdbc.queryForObject("SELECT count(*) FROM outbox_events WHERE aggregate_id IN (SELECT id FROM bookings WHERE group_request_id=?)",Long.class,requestId));
@@ -104,6 +104,41 @@ class BookingDatabaseTest {
         assertEquals(0L,jdbc.queryForObject("SELECT count(*) FROM bookings WHERE group_request_id=?",Long.class,requestId));
         assertEquals(0L,jdbc.queryForObject("SELECT count(*) FROM booking_groups WHERE request_id=?",Long.class,requestId));
         assertEquals(0L,jdbc.queryForObject("SELECT count(*) FROM outbox_events WHERE payload->'payload'->>'flightId'=?",Long.class,flight.toString()));
+    }
+    private UUID extraSeat() {
+        UUID id=UUID.randomUUID();
+        jdbc.update("INSERT INTO flight_seats(id,flight_id,seat_no,cabin_class,status) VALUES (?,?,'03C','ECONOMY','AVAILABLE')",id,flight);
+        return id;
+    }
+    private CreateBookingGroup party(UUID second) {
+        return new CreateBookingGroup(List.of(flight),"party@example.com",List.of(
+            new TripPassenger("First adult","ADULT",null,null,"Baby",List.of(seat)),
+            new TripPassenger("Second adult","ADULT",null,null,null,List.of(second))),
+            new Payment(new BigDecimal("3000000"),"VND"),UUID.randomUUID());
+    }
+    @Test void partyGetsOneGroupCodeAndAllRowsInOneCommit() {
+        UUID second=extraSeat();
+        BookingService service=new BookingService(new BookingRepository(jdbc),JsonMapper.builder().build(),manager);
+        CreateBookingGroup request=party(second);
+        BookingGroup group=service.createGroup(request);
+        assertEquals(2,group.tickets().size());
+        assertTrue(group.tickets().stream().allMatch(ticket->group.groupCode().equals(ticket.groupCode())));
+        assertEquals("Baby",group.tickets().get(0).infantName());
+        assertEquals(0,new BigDecimal("3000000").compareTo(group.totalAmount()));
+        assertEquals(2L,jdbc.queryForObject("SELECT count(*) FROM payments WHERE booking_id IN (SELECT id FROM bookings WHERE group_id=?)",Long.class,group.groupId()));
+        assertEquals(8L,jdbc.queryForObject("SELECT count(*) FROM outbox_events WHERE aggregate_id IN (SELECT id FROM bookings WHERE group_id=?)",Long.class,group.groupId()));
+        assertEquals(group.groupId(),service.createGroup(request).groupId());
+        assertEquals(1L,jdbc.queryForObject("SELECT count(*) FROM booking_groups WHERE request_id=?",Long.class,request.requestId()));
+    }
+    @Test void oneTakenSeatCancelsTheWholeParty() {
+        UUID second=extraSeat();
+        BookingService service=new BookingService(new BookingRepository(jdbc),JsonMapper.builder().build(),manager);
+        jdbc.update("UPDATE flight_seats SET status='BOOKED' WHERE id=?",second);
+        CreateBookingGroup request=party(second);
+        assertEquals("SEAT_ALREADY_BOOKED",assertThrows(ApiException.class,()->service.createGroup(request)).code());
+        assertEquals("AVAILABLE",jdbc.queryForObject("SELECT status FROM flight_seats WHERE id=?",String.class,seat));
+        assertEquals(0L,jdbc.queryForObject("SELECT count(*) FROM bookings WHERE flight_id=?",Long.class,flight));
+        assertEquals(0L,jdbc.queryForObject("SELECT count(*) FROM booking_groups WHERE request_id=?",Long.class,request.requestId()));
     }
     @AfterEach void cleanup() {
         if(jdbc==null||flight==null) return;

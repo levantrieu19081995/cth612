@@ -38,24 +38,58 @@ public final class BookingDtos {
     public record MealOption(String code, BigDecimal price) {}
     public record SeatFeeRule(String rule, BigDecimal price) {}
     public record Ancillaries(List<BaggageOption> baggage, List<MealOption> meals, List<SeatFeeRule> seatFees) {}
+    public enum PassengerType { ADULT, CHILD, INFANT }
+    public record GroupPassenger(@NotBlank @Size(max=120) String passengerName,
+            @NotBlank @Email @Size(max=254) String passengerEmail,
+            @NotNull PassengerType passengerType, UUID seatId,
+            @Min(15) @Max(25) Integer baggageKg,
+            @Pattern(regexp="CHICKEN|VEGETARIAN|SANDWICH") String mealCode) {}
+    public record GroupBookingRequest(@NotNull UUID flightId, @NotNull UUID requestId,
+            @NotNull @Size(min=1, max=9) List<@NotNull @Valid GroupPassenger> passengers) {}
+    public record TripPassenger(@NotBlank @Size(max=120) String passengerName,
+            @Pattern(regexp="ADULT|CHILD") String passengerType,
+            @Min(15) @Max(25) Integer baggageKg, @Pattern(regexp="CHICKEN|VEGETARIAN|SANDWICH") String mealCode,
+            @Size(max=120) String infantName,
+            @NotNull @Size(min=1, max=2) List<@NotNull UUID> seatIds) {
+        public TripPassenger {
+            if (passengerType == null) passengerType = "ADULT";
+            if (infantName != null && infantName.isBlank()) infantName = null;
+        }
+    }
+    public record CreateBookingGroup(@NotNull @Size(min=1, max=2) List<@NotNull UUID> flightIds,
+            @NotBlank @Email @Size(max=254) String contactEmail,
+            @NotNull @Size(min=1, max=9) List<@NotNull @Valid TripPassenger> passengers,
+            @NotNull @Valid Payment payment, @NotNull UUID requestId) {}
+    public record BookingGroup(UUID groupId, String groupCode, String tripType, String contactEmail,
+            String status, Instant createdAt, BigDecimal totalAmount, String currency, List<Booking> tickets) {}
     public record Seat(UUID seatId, String seatNo, String cabinClass, String status) {}
     public record Booking(UUID bookingId, String bookingCode, UUID flightId, String flightNo,
             UUID seatId, String seatNo, String passengerName, String passengerEmail,
             String status, Instant createdAt, BigDecimal amount, String currency,
             Integer baggageKg, String mealCode, BigDecimal seatFee, String passengerType,
-            String cabinClass, BigDecimal cabinFee) {
+            String cabinClass, BigDecimal cabinFee, String groupCode, Integer legNo, String infantName,
+            UUID groupRequestId) {
+        public Booking(UUID bookingId, String bookingCode, UUID flightId, String flightNo,
+                UUID seatId, String seatNo, String passengerName, String passengerEmail,
+                String status, Instant createdAt, BigDecimal amount, String currency,
+                Integer baggageKg, String mealCode, BigDecimal seatFee, String passengerType,
+                String cabinClass, BigDecimal cabinFee) {
+            this(bookingId, bookingCode, flightId, flightNo, seatId, seatNo, passengerName,
+                passengerEmail, status, createdAt, amount, currency, baggageKg, mealCode, seatFee,
+                passengerType, cabinClass, cabinFee, null, null, null, null);
+        }
         public Booking(UUID bookingId, String bookingCode, UUID flightId, String flightNo,
                 UUID seatId, String seatNo, String passengerName, String passengerEmail,
                 String status, Instant createdAt, BigDecimal amount, String currency,
                 Integer baggageKg, String mealCode, BigDecimal seatFee) {
             this(bookingId, bookingCode, flightId, flightNo, seatId, seatNo, passengerName,
-                passengerEmail, status, createdAt, amount, currency, baggageKg, mealCode, seatFee, "ADULT", "ECONOMY", BigDecimal.ZERO);
+                passengerEmail, status, createdAt, amount, currency, baggageKg, mealCode, seatFee, "ADULT", "ECONOMY", BigDecimal.ZERO, null, null, null, null);
         }
         public Booking(UUID bookingId, String bookingCode, UUID flightId, String flightNo,
                 UUID seatId, String seatNo, String passengerName, String passengerEmail,
                 String status, Instant createdAt, BigDecimal amount, String currency) {
             this(bookingId, bookingCode, flightId, flightNo, seatId, seatNo, passengerName,
-                passengerEmail, status, createdAt, amount, currency, null, null, BigDecimal.ZERO, "ADULT", "ECONOMY", BigDecimal.ZERO);
+                passengerEmail, status, createdAt, amount, currency, null, null, BigDecimal.ZERO, "ADULT", "ECONOMY", BigDecimal.ZERO, null, null, null, null);
         }
     }
 }

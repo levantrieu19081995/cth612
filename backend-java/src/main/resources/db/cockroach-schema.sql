@@ -82,6 +82,9 @@ CREATE INDEX IF NOT EXISTS idx_outbox_unpublished
 ON outbox_events (published_at, occurred_at);
 
 -- Additive migrations preserve existing local/demo bookings.
+ALTER TABLE bookings ALTER COLUMN seat_id DROP NOT NULL;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS group_request_id UUID NULL;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS group_index INT4 NULL;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS request_id UUID NULL;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS request_fingerprint STRING NULL;
 ALTER TABLE bookings ADD COLUMN IF NOT EXISTS baggage_kg INT8 NULL;
@@ -96,3 +99,22 @@ ALTER TABLE outbox_events ADD COLUMN IF NOT EXISTS lease_until TIMESTAMPTZ NULL;
 ALTER TABLE outbox_events ADD COLUMN IF NOT EXISTS next_attempt_at TIMESTAMPTZ NOT NULL DEFAULT now();
 CREATE INDEX IF NOT EXISTS idx_outbox_due ON outbox_events(next_attempt_at, occurred_at) WHERE published_at IS NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_booking ON payments(booking_id);
+
+-- Extend the existing group table for shared codes and round trips.
+-- Older one-way groups may have no metadata; their request IDs and tickets stay intact.
+ALTER TABLE booking_groups ADD COLUMN IF NOT EXISTS id UUID DEFAULT gen_random_uuid();
+ALTER TABLE booking_groups ADD COLUMN IF NOT EXISTS flight_id UUID NULL REFERENCES flights(id);
+ALTER TABLE booking_groups ADD COLUMN IF NOT EXISTS group_code STRING NULL;
+ALTER TABLE booking_groups ADD COLUMN IF NOT EXISTS trip_type STRING NULL;
+ALTER TABLE booking_groups ADD COLUMN IF NOT EXISTS contact_email STRING NULL;
+ALTER TABLE booking_groups ADD COLUMN IF NOT EXISTS total_amount DECIMAL(18,2) NULL;
+ALTER TABLE booking_groups ADD COLUMN IF NOT EXISTS currency STRING NULL;
+ALTER TABLE booking_groups ADD COLUMN IF NOT EXISTS status STRING NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_booking_group_id ON booking_groups(id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_booking_group_code ON booking_groups(group_code) WHERE group_code IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_group_request_id ON booking_groups(request_id);
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS group_id UUID NULL;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS leg_no INT8 NULL;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS passenger_no INT8 NULL;
+ALTER TABLE bookings ADD COLUMN IF NOT EXISTS infant_name STRING NULL;
+CREATE INDEX IF NOT EXISTS idx_bookings_group ON bookings(group_id) WHERE group_id IS NOT NULL;
