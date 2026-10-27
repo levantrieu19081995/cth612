@@ -1,6 +1,7 @@
 "use client";
 
-import {
+import
+{
   ActionIcon,
   Alert,
   Badge,
@@ -27,7 +28,8 @@ import {
   ThemeIcon,
   Title,
 } from "@mantine/core";
-import {
+import
+{
   IconAlertCircle,
   IconArrowRight,
   IconArmchair,
@@ -56,9 +58,9 @@ import {
 import { DateInput, MonthPickerInput } from '@mantine/dates';
 import 'dayjs/locale/vi';
 
-import React, { useEffect, useRef, useState, type FormEvent } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ApiError, apiGet, apiPost } from "../../lib/api";
-import type { Flight, Seat, Booking, CreateBooking, FlightBookingRequest } from "../../types/booking";
+import { type Flight, type Seat, type Booking, type BookingGroup, type CreateBookingGroup, type FlightBookingPassenger, type FlightBookingRequest } from "../../types/booking";
 import Link from "next/link";
 
 import { useForm } from "@mantine/form";
@@ -73,24 +75,13 @@ import SectionThongTinKhachHang from "./SectionThongTinKhachHang";
 import SectionBookingSeat from "./SectionBookingSeat";
 
 
-const baggageOptions = [
-  { value: "15", label: "15 kg · 150.000đ" },
-  { value: "20", label: "20 kg · 200.000đ" },
-  { value: "25", label: "25 kg · 300.000đ" },
-];
-const mealOptions = [
-  { value: "CHICKEN", label: "Cơm gà · 90.000đ" },
-  { value: "VEGETARIAN", label: "Suất chay · 75.000đ" },
-  { value: "SANDWICH", label: "Sandwich · 60.000đ" },
-];
-const baggagePrices: Record<string, number> = { "15": 150000, "20": 200000, "25": 300000 };
-const mealPrices: Record<string, number> = { CHICKEN: 90000, VEGETARIAN: 75000, SANDWICH: 60000 };
 const mealLabels: Record<string, string> = {
   CHICKEN: "Cơm gà",
   VEGETARIAN: "Suất chay",
   SANDWICH: "Sandwich",
 };
-const seatPrice = (seatNo: string) => {
+const seatPrice = (seatNo: string) =>
+{
   if (seatNo.startsWith("01")) return 100000;
   if (seatNo.endsWith("A") || seatNo.endsWith("F")) return 50000;
   return 0;
@@ -104,20 +95,19 @@ const airportOptions = [
   { value: "VCA", label: "Cần Thơ (VCA)" },
 ];
 
-export type PassengerDraft = {
-  passengerType: "ADULT" | "CHILD";
-  name: string;
-  email: string;
-  seatId: string | null;
-  booking: Booking | null;
-};
+export type PassengerDraft = FlightBookingPassenger;
 
 const createPassenger = (passengerType: PassengerDraft["passengerType"] = "ADULT"): PassengerDraft => ({
   passengerType,
-  name: "",
-  email: "",
-  seatId: null,
+  passengerName: "",
+  baggageKg: null,
+  mealCode: "",
+  baggageKgs: [null, null],
+  mealCodes: ["", ""],
+  infantName: "",
+  seatIds: [],
   booking: null,
+  bookings: [],
 });
 
 const cabinLabels: Record<string, string> = {
@@ -132,13 +122,15 @@ const cabinPrices: Record<string, number> = {
   BUSINESS: 1000000,
 };
 
-const dateWithOffset = (date: string, offset: number) => {
+const dateWithOffset = (date: string, offset: number) =>
+{
   const [year, month, day] = date.split("-").map(Number);
   const adjusted = new Date(Date.UTC(year, month - 1, day + offset));
   return `${adjusted.getUTCFullYear()}-${String(adjusted.getUTCMonth() + 1).padStart(2, "0")}-${String(adjusted.getUTCDate()).padStart(2, "0")}`;
 };
 
-const flightDate = (value: string) => {
+const flightDate = (value: string) =>
+{
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Ho_Chi_Minh",
     year: "numeric",
@@ -149,7 +141,8 @@ const flightDate = (value: string) => {
   return `${part("year")}-${part("month")}-${part("day")}`;
 };
 
-function BookingPageContent() {
+function BookingPageContent()
+{
   const { get, set } = useQueryFilters();
 
   const origin = get("origin") ?? "";
@@ -159,40 +152,41 @@ function BookingPageContent() {
 
   const [type, setType] = useState<"oneWay" | "roundTrip">("oneWay")
   const [flights, setFlights] = useState<Flight[]>([]);
-  const [flight, setFlight] = useState<Flight | null>(null);
+  const [returnFlights, setReturnFlights] = useState<Flight[]>([]);
+  const [selectedFlightIds, setSelectedFlightIds] = useState<Set<string>>(() => new Set());
+  const [activeLegIndex, setActiveLegIndex] = useState<0 | 1>(0);
+  const [selectedFlights, setSelectedFlights] = useState<[Flight | null, Flight | null]>([null, null]);
+  const flight = selectedFlights[activeLegIndex];
+  const setFlight = (value: React.SetStateAction<Flight | null>) =>
+  {
+    setSelectedFlights(current =>
+    {
+      const next = [...current] as [Flight | null, Flight | null];
+      next[activeLegIndex] = typeof value === "function" ? value(current[activeLegIndex]) : value;
+      return next;
+    });
+  };
   const [seats, setSeats] = useState<Seat[]>([]);
+  const [seatsByLeg, setSeatsByLeg] = useState<[Seat[], Seat[]]>([[], []]);
   const [adultCount, setAdultCount] = useState<number>(1);
   const [childCount, setChildCount] = useState<number>(0);
   const [infantCount, setInfantCount] = useState<number>(0);
-  const [passengers, setPassengers] = useState<PassengerDraft[]>([createPassenger()]);
   const [activePassengerIndex, setActivePassengerIndex] = useState(0);
   const [suggestedFlights, setSuggestedFlights] = useState<Flight[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [suggestionError, setSuggestionError] = useState("");
-  const [baggageKg, setBaggageKg] = useState<string | null>(null);
-  const [mealCode, setMealCode] = useState<string | null>(null);
 
   const [searching, setSearching] = useState(false);
   const [loadingSeats, setLoadingSeats] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
   const seatRequest = useRef(0);
   const searchRequest = useRef(0);
   const submitLock = useRef(false);
-  const selectedSeats = passengers.map(passenger => seats.find(item => item.seatId === passenger.seatId) ?? null);
-  const allPassengersBooked = passengers.every(passenger => passenger.booking !== null);
-  const selectedSeatFee = selectedSeats.reduce((total, item) => total + (item ? seatPrice(item.seatNo) : 0), 0);
-  const selectedCabinFee = selectedSeats.reduce((total, item) => total + (item ? cabinPrices[item.cabinClass] ?? 0 : 0), 0);
-  const selectedBaseFare = flight ? selectedSeats.reduce((total, item, index) =>
-    total + (item ? passengers[index].passengerType === "CHILD" ? flight.price * 0.75 : flight.price : 0), 0) : 0;
-  const selectedBaggageFee = baggageKg ? baggagePrices[baggageKg] : 0;
-  const selectedMealFee = mealCode ? mealPrices[mealCode] : 0;
-  const bookingTotal = flight && selectedSeats.some(Boolean)
-    ? selectedSeats.reduce((total, item, index) => total + (item
-      ? (passengers[index].passengerType === "CHILD" ? flight.price * 0.75 : flight.price) +
-      (cabinPrices[item.cabinClass] ?? 0) + seatPrice(item.seatNo) + selectedBaggageFee + selectedMealFee
-      : 0), 0)
-    : 0;
+  const initialSearchStarted = useRef(false);
+  const bookingAttempt = useRef<{ fingerprint: string; requestId: string } | null>(null);
+
   const requiredSeatCount = adultCount + childCount;
 
   const [searchPeriod, setSearchPeriod] = useState<"day" | "month">(date ? "day" : "month");
@@ -202,12 +196,16 @@ function BookingPageContent() {
     destination: string | null;
     date: string | null;
     month: string | null;
+    returnDate: string | null;
+    returnMonth: string | null;
   }>({
     initialValues: {
       origin: origin ?? null,
       destination: destination ?? null,
       date: date ?? null,
       month: month ?? null,
+      returnDate: null,
+      returnMonth: null,
     },
   })
 
@@ -224,19 +222,83 @@ function BookingPageContent() {
     },
   })
 
-  function updatePartySize(adults: number, children: number, infants = Math.min(infantCount, adults)) {
+  const passengers = bookingForm.values.passengers;
+
+  const requiredLegCount = type === "roundTrip" ? 2 : 1;
+  const selectedBookingFlights = selectedFlights.slice(0, requiredLegCount);
+  const visibleFlights = activeLegIndex === 0
+    ? flights
+    : returnFlights.filter(candidate => !selectedFlights[0] ||
+      new Date(candidate.departureTime) > new Date(selectedFlights[0].arrivalTime));
+  const displayedOrigin = activeLegIndex === 0 ? searchForm.values.origin : searchForm.values.destination;
+  const displayedDestination = activeLegIndex === 0 ? searchForm.values.destination : searchForm.values.origin;
+  const displayedDate = activeLegIndex === 0
+    ? searchPeriod === "day" ? searchForm.values.date : searchForm.values.month
+    : searchPeriod === "day" ? searchForm.values.returnDate : searchForm.values.returnMonth;
+  const passengerLegData = (passenger: PassengerDraft, legIndex: number) => ({
+    baggageKg: passenger.baggageKgs?.[legIndex] ?? (legIndex === 0 ? passenger.baggageKg : null),
+    mealCode: passenger.mealCodes?.[legIndex] ?? (legIndex === 0 ? passenger.mealCode : ""),
+  });
+
+  const allPassengersBooked = passengers.length > 0 && passengers.every(passenger => passenger.booking !== null);
+
+  const confirmationPassengers = passengers.flatMap((passenger, index) =>
+  {
+    if (passenger.booking !== null) return [];
+    const legs = Array.from({ length: requiredLegCount }, (_, legIndex) =>
+    {
+      const selectedFlight = selectedBookingFlights[legIndex];
+      const seatId = passenger.seatIds[legIndex];
+      const seat = seatsByLeg[legIndex].find(item => item.seatId === seatId);
+      if (!selectedFlight || !seat) return null;
+      const { baggageKg, mealCode } = passengerLegData(passenger, legIndex);
+      const fare = passenger.passengerType === "CHILD"
+        ? Math.round(selectedFlight.price * 0.75)
+        : selectedFlight.price;
+      const baggageFee = baggageKg === null ? 0 : selectedFlight.ancillaries?.baggage.find(item => item.kg === baggageKg)?.price ?? 0;
+      const mealFee = selectedFlight.ancillaries?.meals.find(item => item.code === mealCode)?.price ?? 0;
+      const cabinFee = cabinPrices[seat.cabinClass] ?? 0;
+      const seatFee = seatPrice(seat.seatNo);
+      return {
+        flight: selectedFlight,
+        seat,
+        fare,
+        cabinFee,
+        seatFee,
+        baggageKg,
+        baggageFee,
+        mealCode,
+        mealFee,
+        total: fare + cabinFee + seatFee + baggageFee + mealFee,
+      };
+    });
+    if (legs.some(leg => leg === null)) return [];
+    return [{ passenger, index, legs: legs.filter((leg): leg is NonNullable<typeof leg> => leg !== null), total: legs.reduce((total, leg) => total + (leg?.total ?? 0), 0) }];
+  });
+  const confirmationTotal = confirmationPassengers.reduce((total, passenger) => total + passenger.total, 0);
+
+  function updatePartySize(adults: number, children: number, infants = Math.min(infantCount, adults))
+  {
     setAdultCount(adults);
     setChildCount(children);
     setInfantCount(infants);
-    setPassengers(current => Array.from({ length: adults + children }, (_, index) => ({
-      ...(current[index] ?? createPassenger(index < adults ? "ADULT" : "CHILD")),
-      passengerType: index < adults ? "ADULT" : "CHILD",
-      seatId: null,
-      booking: null,
-    })));
+    bookingForm.setFieldValue("passengers", (current) => Array.from({ length: adults + children }, (_, index) =>
+    {
+      const passengerType: PassengerDraft["passengerType"] = index < adults ? "ADULT" : "CHILD";
+      return {
+        ...(current[index] ?? createPassenger(passengerType)),
+        passengerType,
+        seatIds: [],
+        booking: null,
+        bookings: [],
+      };
+    }));
+    bookingForm.setFieldValue("flightIds", []);
     setActivePassengerIndex(0);
-    setFlight(null);
+    setSelectedFlights([null, null]);
+    setSelectedFlightIds(new Set());
     setSeats([]);
+    setSeatsByLeg([[], []]);
     setLoadingSeats(false);
     setSuggestedFlights([]);
     setSuggestionError("");
@@ -246,29 +308,65 @@ function BookingPageContent() {
   }
 
 
-  const handleSearchFlights = React.useCallback(async (values: typeof searchForm.values) => {
-    if (!searchForm.values || !values.origin || !values.destination) return;
+  const handleSearchFlights = React.useCallback(async (values: typeof searchForm.values) =>
+  {
+    if (!values.origin || !values.destination) {
+      setError("Vui lòng chọn điểm khởi hành và điểm đến.");
+      return;
+    }
+    if (searchPeriod === "day" ? !values.date : !values.month) {
+      setError("Vui lòng chọn thời gian khởi hành.");
+      return;
+    }
+    if (type === "roundTrip") {
+      const returnFilter = searchPeriod === "day" ? values.returnDate : values.returnMonth;
+      if (!returnFilter) {
+        setError(searchPeriod === "day" ? "Vui lòng chọn ngày về." : "Vui lòng chọn tháng về để tìm ngày bay.");
+        return;
+      }
+      if (searchPeriod === "day" && values.date && values.returnDate && values.returnDate < values.date) {
+        setError("Ngày về không thể trước ngày đi.");
+        return;
+      }
+      if (searchPeriod === "month" && values.month && values.returnMonth &&
+        values.returnMonth.slice(0, 7) < values.month.slice(0, 7)) {
+        setError("Tháng về không thể trước tháng đi.");
+        return;
+      }
+    }
+
+    const requestId = ++searchRequest.current;
     set({
       origin: values.origin,
       destination: values.destination,
       date: values.date || null,
-      month: values.month || null
+      month: values.month || null,
+      returnDate: values.returnDate || null,
+      returnMonth: values.returnMonth || null,
     });
 
     setSearching(true);
     setLoadingSeats(false);
     setError("");
-    setFlight(null);
+    setFlights([]);
+    setReturnFlights([]);
+    setSelectedFlights([null, null]);
     setSeats([]);
+    setSeatsByLeg([[], []]);
+    setSelectedFlightIds(new Set());
+    setActiveLegIndex(0);
+    bookingForm.setFieldValue("flightIds", []);
+    bookingForm.setFieldValue("requestId", crypto.randomUUID());
+    bookingAttempt.current = null;
 
-    setPassengers(Array.from({ length: requiredSeatCount }, (_, index) => createPassenger(index < adultCount ? "ADULT" : "CHILD")));
+    bookingForm.setFieldValue("passengers", Array.from({ length: requiredSeatCount }, (_, index) => createPassenger(index < adultCount ? "ADULT" : "CHILD")));
     setActivePassengerIndex(0);
     setSuggestedFlights([]);
     setSuggestionError("");
     setLoadingSuggestions(false);
 
     try {
-      const request = {
+      const outboundRequest = {
         origin: values.origin,
         destination: values.destination,
         ...(searchPeriod === "day" && values.date
@@ -278,37 +376,104 @@ function BookingPageContent() {
           ? { month: values.month.slice(0, 7) }
           : {}),
         requiredSeats: requiredSeatCount,
-      }
-      const data = await __getTimChuyenBay(request);
-
-      setFlights(data);
+      };
+      const requests = [
+        __getTimChuyenBay(outboundRequest),
+        ...(type === "roundTrip" ? [__getTimChuyenBay({
+          origin: values.destination,
+          destination: values.origin,
+          ...(searchPeriod === "day" && values.returnDate
+            ? { date: values.returnDate.slice(0, 10) }
+            : {}),
+          ...(searchPeriod === "month" && values.returnMonth
+            ? { month: values.returnMonth.slice(0, 7) }
+            : {}),
+          requiredSeats: requiredSeatCount,
+        })] : []),
+      ];
+      const results = await Promise.all(requests);
+      if (requestId !== searchRequest.current) return;
+      setFlights(results[0]);
+      setReturnFlights(results[1] ?? []);
 
     } catch (err) {
-
+      if (requestId !== searchRequest.current) return;
       setFlights([]);
+      setReturnFlights([]);
       setError(errorText(err));
 
     } finally {
-      setSearching(false);
+      if (requestId === searchRequest.current) setSearching(false);
     }
-  }, [origin, destination, date, month]);
+  }, [searchPeriod, type, requiredSeatCount, adultCount, set]);
 
-  useEffect(() => {
-    handleSearchFlights(searchForm.values);
+  useEffect(() =>
+  {
+    if (initialSearchStarted.current) return;
+    initialSearchStarted.current = true;
+    if (origin && destination && (date || month)) void handleSearchFlights(searchForm.values);
   }, [handleSearchFlights])
 
-  async function toggleChooseFlight(item: Flight) {
+  function switchActiveLeg(legIndex: 0 | 1)
+  {
+    if (legIndex === 1 && type !== "roundTrip") return;
+    if (legIndex === 1 && !selectedFlights[0]) {
+      setError("Chọn chuyến đi trước khi chọn chuyến về.");
+      return;
+    }
+    ++seatRequest.current;
+    setActiveLegIndex(legIndex);
+    setSeats(seatsByLeg[legIndex]);
+    setLoadingSeats(false);
+    setActivePassengerIndex(0);
+    setError("");
+  }
+
+  async function toggleChooseFlight(item: Flight)
+  {
+    const legIndex = activeLegIndex;
+    const outbound = selectedFlights[0];
+    if (legIndex === 1 && !outbound) {
+      setError("Chọn chuyến đi trước khi chọn chuyến về.");
+      return;
+    }
+    if (legIndex === 1 && outbound && new Date(item.departureTime) <= new Date(outbound.arrivalTime)) {
+      setError("Chuyến về phải khởi hành sau khi chuyến đi đến nơi.");
+      return;
+    }
     const request = ++seatRequest.current;
     if (flight?.flightId === item.flightId) {
-      setFlight(null);
+
+      setSelectedFlights(current =>
+      {
+        const next = [...current] as [Flight | null, Flight | null];
+        next[legIndex] = null;
+        if (legIndex === 0) next[1] = null;
+        return next;
+      });
       setSeats([]);
-      setPassengers(current => current.map(passenger => ({
+      setSeatsByLeg(current =>
+      {
+        const next = [...current] as [Seat[], Seat[]];
+        next[legIndex] = [];
+        if (legIndex === 0) next[1] = [];
+        return next;
+      });
+      setSelectedFlightIds(current =>
+      {
+        const next = new Set(current);
+        next.delete(item.flightId);
+        if (legIndex === 0 && selectedFlights[1]) next.delete(selectedFlights[1]!.flightId);
+        return next;
+      });
+      bookingForm.setFieldValue("passengers", (current) => current.map(passenger => ({
         ...passenger,
-        seatId: null,
+        seatIds: legIndex === 0 ? ["", ""] : passenger.seatIds.map((seatId, index) => index === legIndex ? "" : seatId),
       })));
+      const currentFlights = selectedFlights.map((selected, index) => index === legIndex || (legIndex === 0 && index === 1) ? null : selected)
+        .filter((selected): selected is Flight => selected !== null);
+      bookingForm.setFieldValue("flightIds", currentFlights.map(selected => selected.flightId));
       setActivePassengerIndex(0);
-      setBaggageKg(null);
-      setMealCode(null);
       setError("");
       setSuggestedFlights([]);
       setSuggestionError("");
@@ -317,12 +482,51 @@ function BookingPageContent() {
       return;
     }
 
+    setSelectedFlights(current =>
+    {
+      const next = [...current] as [Flight | null, Flight | null];
+      next[legIndex] = item;
+      if (legIndex === 0) next[1] = null;
+      return next;
+    });
+    setSelectedFlightIds(current =>
+    {
+      const next = new Set(current);
+      if (legIndex === 0 && selectedFlights[1]) next.delete(selectedFlights[1]!.flightId);
+      next.add(item.flightId);
+      return next;
+    });
+    if (legIndex === 0) {
+      setSeatsByLeg([[], []]);
+    }
+    const updatedFlights = [...selectedFlights] as [Flight | null, Flight | null];
+    updatedFlights[legIndex] = item;
+    if (legIndex === 0) updatedFlights[1] = null;
+    bookingForm.setFieldValue("flightIds", updatedFlights.slice(0, requiredLegCount)
+      .filter((selected): selected is Flight => selected !== null)
+      .map(selected => selected.flightId));
+    if (legIndex === 0) {
+      bookingForm.setFieldValue("passengers", current => current.map(passenger => ({
+        ...passenger,
+        seatIds: ["", ""],
+      })));
+    }
     setFlight(item);
     setSeats([]);
-    setPassengers(current => Array.from({ length: requiredSeatCount }, (_, index) => current[index] ?? createPassenger(index < adultCount ? "ADULT" : "CHILD")));
+    setSeatsByLeg(current =>
+    {
+      const next = [...current] as [Seat[], Seat[]];
+      next[legIndex] = [];
+      if (legIndex === 0) next[1] = [];
+      return next;
+    });
+    bookingForm.setFieldValue("passengers", current => Array.from({ length: requiredSeatCount }, (_, index) => ({
+      ...(current[index] ?? createPassenger(index < adultCount ? "ADULT" : "CHILD")),
+      seatIds: legIndex === 0
+        ? ["", ""]
+        : current[index]?.seatIds.map((seatId, seatIndex) => seatIndex === legIndex ? "" : seatId) ?? ["", ""],
+    })));
     setActivePassengerIndex(0);
-    setBaggageKg(null);
-    setMealCode(null);
     setError("");
     setSuggestedFlights([]);
     setSuggestionError("");
@@ -333,13 +537,28 @@ function BookingPageContent() {
       currentAvailability = data.filter(seat => seat.status === "AVAILABLE").length;
       if (request === seatRequest.current) {
         setSeats(data);
+        setSeatsByLeg(current =>
+        {
+          const next = [...current] as [Seat[], Seat[]];
+          next[legIndex] = data;
+          return next;
+        });
         setFlight(current => current?.flightId === item.flightId
           ? { ...current, availableSeats: currentAvailability, sufficientSeats: currentAvailability >= requiredSeatCount }
           : current);
       }
     } catch (err) {
-      if (request === seatRequest.current)
+      if (request === seatRequest.current) {
         setError(errorText(err));
+        setSeats([]);
+        setSeatsByLeg(current =>
+        {
+          const next = [...current] as [Seat[], Seat[]];
+          next[legIndex] = [];
+          return next;
+        });
+      }
+
     }
     finally {
       if (request === seatRequest.current)
@@ -350,10 +569,11 @@ function BookingPageContent() {
 
     const departureTime = new Date(item.departureTime).getTime();
 
-    const sameDayOptions = flights
+    const sameDayOptions = visibleFlights
       .filter(candidate => candidate.flightId !== item.flightId &&
         candidate.origin === item.origin && candidate.destination === item.destination &&
         candidate.availableSeats >= requiredSeatCount &&
+        (legIndex === 0 || !outbound || new Date(candidate.departureTime) > new Date(outbound.arrivalTime)) &&
         flightDate(candidate.departureTime) === flightDate(item.departureTime) &&
         Math.abs(new Date(candidate.departureTime).getTime() - departureTime) <= 60 * 60 * 1000)
       .sort((left, right) =>
@@ -376,16 +596,20 @@ function BookingPageContent() {
           requiredSeats: requiredSeatCount,
         })));
       if (request === seatRequest.current) {
+
         const availableResults = adjacentResults
           .filter((result): result is PromiseFulfilledResult<Flight[]> => result.status === "fulfilled")
           .flatMap(result => result.value);
+
         const failedSearches = adjacentResults.filter(result => result.status === "rejected").length;
+
         setSuggestedFlights(availableResults
           .filter(candidate => candidate.availableSeats >= requiredSeatCount)
           .sort((left, right) =>
             Math.abs(new Date(left.departureTime).getTime() - departureTime) -
             Math.abs(new Date(right.departureTime).getTime() - departureTime))
           .slice(0, 3));
+
         if (failedSearches > 0) {
           setSuggestionError(`Không thể tra cứu ${failedSearches} ngày liền kề; các chuyến tìm được vẫn được hiển thị.`);
         }
@@ -398,86 +622,94 @@ function BookingPageContent() {
     }
   }
 
-  async function book(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!flight || submitLock.current) return;
-    const pendingPassengers = passengers
-      .map((passenger, index) => ({ passenger, index, seat: selectedSeats[index] }))
-      .filter((item): item is { passenger: PassengerDraft; index: number; seat: Seat } =>
-        item.seat !== null && item.passenger.booking === null);
-    if (pendingPassengers.length === 0) return;
+  async function handleSubmit()
+  {
+    if (submitLock.current || selectedBookingFlights.length !== requiredLegCount ||
+      selectedBookingFlights.some(selected => !selected)) {
+      setError(type === "roundTrip"
+        ? "Vui lòng chọn cả chuyến đi và chuyến về trước khi xác nhận."
+        : "Vui lòng chọn chuyến bay trước khi xác nhận.");
+      return;
+    }
+    const selected = selectedBookingFlights as Flight[];
+    if (type === "roundTrip" && new Date(selected[1].departureTime) <= new Date(selected[0].arrivalTime)) {
+      setError("Chuyến về phải khởi hành sau khi chuyến đi đến nơi.");
+      return;
+    }
+    if (!bookingForm.values.contactEmail.trim() ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(bookingForm.values.contactEmail.trim())) {
+      setError("Vui lòng nhập email liên hệ hợp lệ.");
+      return;
+    }
+    if (passengers.some(passenger => !passenger.passengerName.trim())) {
+      setError("Vui lòng nhập họ tên cho tất cả hành khách.");
+      return;
+    }
+    if (confirmationPassengers.length !== passengers.filter(passenger => passenger.booking === null).length) {
+      setError("Vui lòng chọn đủ một ghế cho mỗi hành khách trên từng chặng.");
+      return;
+    }
+    if (confirmationPassengers.length === 0) return;
 
     submitLock.current = true;
     setSubmitting(true);
     setError("");
-    const failures: string[] = [];
     try {
-      for (const { passenger, index, seat: selectedSeat } of pendingPassengers) {
-        const passengerBaseFare = passenger.passengerType === "CHILD"
-          ? Math.round(flight.price * 0.75)
-          : flight.price;
-        const totalAmount = passengerBaseFare + (cabinPrices[selectedSeat.cabinClass] ?? 0) +
-          seatPrice(selectedSeat.seatNo) + selectedBaggageFee + selectedMealFee;
-        const fingerprint = JSON.stringify([
-          flight.flightId, selectedSeat.seatId, passenger.name.trim(), passenger.email.trim(),
-          passenger.passengerType, baggageKg, mealCode, totalAmount,
-        ]);
-        const storageKey = `pending-booking-${index}`;
-        let requestId = crypto.randomUUID();
-        try {
-          const candidate: unknown = JSON.parse(sessionStorage.getItem(storageKey) ?? "null");
-          if (candidate && typeof candidate === "object" &&
-            "fingerprint" in candidate && candidate.fingerprint === fingerprint &&
-            "id" in candidate && typeof candidate.id === "string") requestId = candidate.id;
-          sessionStorage.setItem(storageKey, JSON.stringify({ fingerprint, id: requestId }));
-        } catch {
-          // Keep this attempt's request ID when browser storage is unavailable.
-        }
-
-        const body: CreateBooking = {
-          requestId,
-          flightId: flight.flightId,
-          seatId: selectedSeat.seatId,
-          passengerName: passenger.name.trim(),
-          passengerEmail: passenger.email.trim(),
+      const request: CreateBookingGroup = {
+        flightIds: selected.map(item => item.flightId),
+        contactEmail: bookingForm.values.contactEmail.trim(),
+        passengers: passengers.map(passenger => ({
+          passengerName: passenger.passengerName.trim(),
           passengerType: passenger.passengerType,
-          baggageKg: baggageKg ? Number(baggageKg) : null,
-          mealCode,
-          payment: { amount: totalAmount, currency: flight.currency },
-        };
-        try {
-          const result = await apiPost<Booking>("/api/bookings", body);
-          setPassengers(current => current.map((item, passengerIndex) =>
-            passengerIndex === index ? { ...item, booking: result } : item));
-          setSeats(current => current.map(item =>
-            item.seatId === result.seatId ? { ...item, status: "BOOKED" } : item));
-          setFlights(current => current.map(item =>
-            item.flightId === result.flightId
-              ? { ...item, availableSeats: Math.max(0, item.availableSeats - 1) }
-              : item));
-          const nextPassenger = pendingPassengers.find(candidate => candidate.index > index) ??
-            pendingPassengers.find(candidate => candidate.index < index);
-          if (nextPassenger) setActivePassengerIndex(nextPassenger.index);
-          try { sessionStorage.removeItem(storageKey); } catch { /* Storage is optional. */ }
-        } catch (err) {
-          failures.push(`${passenger.name.trim() || `Hành khách ${index + 1}`} · ghế ${selectedSeat.seatNo}: ${errorText(err)}${err instanceof ApiError && err.status < 500
-            ? ""
-            : " (chưa xác định đã lưu hay chưa; có thể gửi lại an toàn với cùng thông tin)"
-            }`);
-          if (err instanceof ApiError && err.code === "SEAT_ALREADY_BOOKED") {
-            try {
-              const latestSeats = await apiGet<Seat[]>(`/api/flights/${flight.flightId}/seats`);
-              setSeats(latestSeats);
-              setPassengers(current => current.map((item, passengerIndex) =>
-                passengerIndex === index ? { ...item, seatId: null } : item));
-              setActivePassengerIndex(index);
-            } catch {
-              failures.push("Không thể tải lại sơ đồ ghế sau khi ghế vừa được người khác đặt.");
-            }
-          }
-        }
+          infantName: passenger.infantName.trim() || null,
+          seatIds: selected.map((_, legIndex) => passenger.seatIds[legIndex]),
+          baggageKgs: selected.map((_, legIndex) => passengerLegData(passenger, legIndex).baggageKg),
+          mealCodes: selected.map((_, legIndex) => passengerLegData(passenger, legIndex).mealCode || null),
+        })),
+        payment: {
+          amount: confirmationTotal,
+          currency: selected[0].currency,
+        },
+        requestId: bookingForm.values.requestId,
+      };
+      const fingerprint = JSON.stringify({
+        flightIds: request.flightIds,
+        contactEmail: request.contactEmail,
+        passengers: request.passengers,
+        payment: request.payment,
+      });
+      if (bookingAttempt.current && bookingAttempt.current.fingerprint !== fingerprint) {
+        request.requestId = crypto.randomUUID();
+      } else if (bookingAttempt.current) {
+        request.requestId = bookingAttempt.current.requestId;
       }
-      if (failures.length > 0) setError(`Một số vé chưa đặt được:\n${failures.join("\n")}`);
+      bookingAttempt.current = { fingerprint, requestId: request.requestId };
+      bookingForm.setFieldValue("requestId", request.requestId);
+      const group = await apiPost<BookingGroup>("/api/booking-groups", request);
+      bookingForm.setFieldValue("flightIds", request.flightIds);
+      bookingForm.setFieldValue("passengers", current => current.map((passenger, passengerIndex) =>
+      {
+        const tickets = selected.map((_, legIndex) =>
+          group.tickets.filter(ticket => ticket.legNo === legIndex + 1)[passengerIndex]).filter((ticket): ticket is Booking => ticket !== undefined);
+        return { ...passenger, booking: tickets[0] ?? null, bookings: tickets };
+      }));
+      setSeatsByLeg(current => current.map((legSeats, legIndex) =>
+        legSeats.map(seat => group.tickets.some(ticket => ticket.legNo === legIndex + 1 && ticket.seatId === seat.seatId)
+          ? { ...seat, status: "BOOKED" }
+          : seat)) as [Seat[], Seat[]]);
+      setSeats(current => current.map(seat => group.tickets.some(ticket => ticket.seatId === seat.seatId)
+        ? { ...seat, status: "BOOKED" }
+        : seat));
+      setFlights(current => current.map(item => selected.some(chosen => chosen.flightId === item.flightId)
+        ? { ...item, availableSeats: Math.max(0, item.availableSeats - passengers.length) }
+        : item));
+      setReturnFlights(current => current.map(item => selected.some(chosen => chosen.flightId === item.flightId)
+        ? { ...item, availableSeats: Math.max(0, item.availableSeats - passengers.length) }
+        : item));
+    } catch (err) {
+      setError(`${errorText(err)}${err instanceof ApiError && err.status < 500
+        ? ""
+        : " Chưa xác định giao dịch đã hoàn tất hay chưa; hãy thử lại với cùng yêu cầu."}`);
     } finally {
       submitLock.current = false;
       setSubmitting(false);
@@ -489,6 +721,7 @@ function BookingPageContent() {
   return (
 
     <Box className="booking-page-shell booking-reference" mih="100vh" py={{ base: "md", md: "xl" }}>
+
       <Container size={1440}>
         <Stack gap="lg">
           <Box className="booking-hero">
@@ -508,26 +741,50 @@ function BookingPageContent() {
                   </Text>
                 </Box>
                 <Group className="booking-hero-highlights" gap="lg" wrap="wrap">
-                  <Group className="booking-hero-pill" gap={7} wrap="nowrap"><ThemeIcon color="teal" size={29} radius="md" variant="filled"><IconCheck size={17} /></ThemeIcon><Text size="sm">Lịch bay linh hoạt</Text></Group>
-                  <Group className="booking-hero-pill" gap={7} wrap="nowrap"><ThemeIcon color="blue" size={29} radius="md" variant="filled"><IconCheck size={17} /></ThemeIcon><Text size="sm">Giá vé minh bạch</Text></Group>
-                  <Group className="booking-hero-pill" gap={7} wrap="nowrap"><ThemeIcon color="orange" size={29} radius="md" variant="filled"><IconArmchair size={17} /></ThemeIcon><Text size="sm">Tự chọn chỗ ngồi</Text></Group>
+
+                  <Group className="booking-hero-pill" gap={7} wrap="nowrap">
+                    <ThemeIcon color="teal" size={29} radius="md" variant="filled">
+                      <IconCheck size={17} />
+                    </ThemeIcon>
+                    <Text size="sm">Lịch bay linh hoạt</Text>
+                  </Group>
+
+                  <Group className="booking-hero-pill" gap={7} wrap="nowrap">
+                    <ThemeIcon color="blue" size={29} radius="md" variant="filled">
+                      <IconCheck size={17} /></ThemeIcon>
+                    <Text size="sm">Giá vé minh bạch</Text>
+                  </Group>
+
+                  <Group className="booking-hero-pill" gap={7} wrap="nowrap">
+                    <ThemeIcon color="orange" size={29} radius="md" variant="filled">
+                      <IconArmchair size={17} />
+                    </ThemeIcon>
+                    <Text size="sm">Tự chọn chỗ ngồi</Text>
+                  </Group>
+
                 </Group>
               </Stack>
+
               <Paper className="booking-hero-route" radius="xl" p="lg" aria-label="Minh họa hành trình bay">
                 <Text className="booking-hero-route-label" size="xs" fw={800} tt="uppercase" lts={1.4}>
                   HÀNH TRÌNH TIẾP THEO
                 </Text>
+
                 <Group className="booking-hero-route-points" justify="space-between" align="center" wrap="nowrap" mt="lg">
                   <Stack gap={3}>
                     <Text className="booking-hero-route-code">{searchForm.values.origin || "ĐI"}</Text>
                     <Text size="xs">Nơi khởi hành</Text>
                   </Stack>
+
                   <Box className="booking-hero-route-line"><IconPlane size={21} /></Box>
+
                   <Stack gap={3} ta="right">
                     <Text className="booking-hero-route-code">{searchForm.values.destination || "ĐẾN"}</Text>
                     <Text size="xs">Điểm đến</Text>
                   </Stack>
+
                 </Group>
+
                 <Text className="booking-hero-route-note" size="xs" mt="lg">
                   Chọn hành trình để xem các chuyến bay đang mở bán
                 </Text>
@@ -601,8 +858,23 @@ function BookingPageContent() {
                     { label: "Khứ hồi", value: "roundTrip" },
                   ]}
                   value={type}
-                  onChange={(value) => {
-                    if (value === "oneWay" || value === "roundTrip") setType(value);
+                  onChange={(value) =>
+                  {
+                    if (value === "oneWay" || value === "roundTrip") {
+                      setType(value);
+                      setSelectedFlights([null, null]);
+                      setSelectedFlightIds(new Set());
+                      bookingForm.setFieldValue("flightIds", []);
+                      bookingForm.setFieldValue("passengers", current => current.map(passenger => ({
+                        ...passenger,
+                        seatIds: [],
+                        booking: null,
+                        bookings: [],
+                      })));
+                      setSeats([]);
+                      setSeatsByLeg([[], []]);
+                      setActiveLegIndex(0);
+                    }
                   }}
                   disabled={submitting || searching}
                 />
@@ -628,7 +900,7 @@ function BookingPageContent() {
                       placeholder="Chọn nơi đi"
                       data={airportOptions}
                       {...searchForm.getInputProps("origin")}
-                      clearable
+                      clearable={searchForm?.values.origin != null}
                       searchable
                       disabled={submitting || searching}
                       size="lg"
@@ -648,7 +920,8 @@ function BookingPageContent() {
                       aria-label="Đổi điểm đi và điểm đến"
                       title="Đổi điểm đi và điểm đến"
                       disabled={submitting || searching}
-                      onClick={() => {
+                      onClick={() =>
+                      {
                         const origin = searchForm.values.origin;
                         const destination = searchForm.values.destination;
                         searchForm.setFieldValue("origin", destination);
@@ -664,7 +937,7 @@ function BookingPageContent() {
                       placeholder="Chọn nơi đến"
                       data={airportOptions?.filter((opt) => opt.value !== searchForm.values.origin)}
                       {...searchForm.getInputProps("destination")}
-                      clearable
+                      clearable={searchForm.values.destination != null}
                       searchable
                       disabled={submitting || searching}
                       size="lg"
@@ -687,10 +960,14 @@ function BookingPageContent() {
                           { label: "Theo tháng", value: "month" },
                         ]}
                         value={searchPeriod}
-                        onChange={(value) => {
+                        onChange={(value) =>
+                        {
                           if (value !== "day" && value !== "month") return;
                           setSearchPeriod(value);
-                          searchForm.setFieldValue(value === "day" ? "month" : "date", null);
+                          searchForm.setFieldValue("date", null);
+                          searchForm.setFieldValue("month", null);
+                          searchForm.setFieldValue("returnDate", null);
+                          searchForm.setFieldValue("returnMonth", null);
                         }}
                         disabled={submitting || searching}
                       />
@@ -725,6 +1002,44 @@ function BookingPageContent() {
                       />
                     )}
                   </Box>
+                  {type === "roundTrip" && (
+                    <Box>
+                      {searchPeriod === "day" ? (
+                        <DateInput
+                          label="Ngày về"
+                          placeholder="Chọn ngày về"
+                          {...searchForm.getInputProps("returnDate")}
+                          disabled={submitting || searching}
+                          leftSection={<IconCalendar size={19} />}
+                          size="lg"
+                          radius="md"
+                          minDate={searchForm.values.date ? new Date(searchForm.values.date) : new Date()}
+                          valueFormat="DD/MM/YYYY"
+                          locale="vi"
+                          clearable
+                        />
+                      ) : (
+                        <>
+                          <MonthPickerInput
+                            label="Tháng về"
+                            placeholder="Chọn tháng về"
+                            {...searchForm.getInputProps("returnMonth")}
+                            disabled={submitting || searching}
+                            leftSection={<IconCalendar size={19} />}
+                            size="lg"
+                            radius="md"
+                            minDate={new Date()}
+                            valueFormat="MMMM YYYY"
+                            locale="vi"
+                            clearable
+                          />
+                          <Text size="xs" c="dimmed" mt={4}>
+                            Chọn tháng, sau đó chọn chuyến bay đúng ngày về trong danh sách.
+                          </Text>
+                        </>
+                      )}
+                    </Box>
+                  )}
                 </Stack>
               </Paper>
 
@@ -746,12 +1061,14 @@ function BookingPageContent() {
                       count: adultCount,
                       min: Math.max(1, infantCount),
                       max: 9,
-                      decrease: () => {
+                      decrease: () =>
+                      {
                         const next = Math.max(adultCount - 1, Math.max(1, infantCount));
                         setAdultCount(next);
                         updatePartySize(next, childCount);
                       },
-                      increase: () => {
+                      increase: () =>
+                      {
                         const next = Math.min(adultCount + 1, 9);
                         setAdultCount(next);
                         updatePartySize(next, childCount);
@@ -764,12 +1081,14 @@ function BookingPageContent() {
                       count: childCount,
                       min: 0,
                       max: 9,
-                      decrease: () => {
+                      decrease: () =>
+                      {
                         const next = Math.max(childCount - 1, 0);
                         setChildCount(next);
                         updatePartySize(adultCount, next);
                       },
-                      increase: () => {
+                      increase: () =>
+                      {
                         const next = Math.min(childCount + 1, 9);
                         setChildCount(next);
                         updatePartySize(adultCount, next);
@@ -785,7 +1104,8 @@ function BookingPageContent() {
                       decrease: () => setInfantCount((prev) => Math.max(prev - 1, 0)),
                       increase: () => setInfantCount((prev) => Math.min(prev + 1, adultCount, 9)),
                     },
-                  ] as const).map((item) => {
+                  ] as const).map((item) =>
+                  {
                     const locked = submitting || searching || passengers.some((p) => p.booking !== null);
                     return (
                       <Paper key={item.key} withBorder radius="lg" p="md">
@@ -806,9 +1126,11 @@ function BookingPageContent() {
                             >
                               <IconMinus size={17} />
                             </ActionIcon>
+
                             <Text fw={800} fz={20} ta="center" miw={24}>
                               {item.count}
                             </Text>
+
                             <ActionIcon
                               aria-label={`Tăng ${item.name.toLowerCase()}`}
                               variant="light"
@@ -855,12 +1177,16 @@ function BookingPageContent() {
                 <Box style={{ flex: 1 }}>
                   <Text fw={700} size="sm">
                     {type === "roundTrip" ? "Chuyến khứ hồi" : "Chuyến một chiều"}
-                    {` · ${adultCount + childCount + infantCount} hành khách`}
+                    {`${adultCount + childCount + infantCount} hành khách`}
                   </Text>
+
                   <Text size="sm" c="dimmed">
-                    {searchPeriod === "day" ? "Tìm theo ngày khởi hành" : "Tìm trong tháng khởi hành"}
+                    {type === "roundTrip"
+                      ? searchPeriod === "day" ? "Chọn ngày đi và ngày về" : "Chọn tháng đi và tháng về, rồi chọn ngày qua chuyến bay"
+                      : searchPeriod === "day" ? "Tìm theo ngày khởi hành" : "Tìm trong tháng khởi hành"}
                   </Text>
                 </Box>
+
                 <Button
                   className="booking-search-submit"
                   size="lg"
@@ -872,7 +1198,10 @@ function BookingPageContent() {
                   disabled={
                     submitting ||
                     searching ||
-                    (searchPeriod === "day" ? !searchForm.values.date : !searchForm.values.month)
+                    (searchPeriod === "day" ? !searchForm.values.date : !searchForm.values.month) ||
+                    (type === "roundTrip" && (searchPeriod === "day"
+                      ? !searchForm.values.returnDate
+                      : !searchForm.values.returnMonth))
                   }
                   onClick={() => handleSearchFlights(searchForm.values)}
                 >
@@ -890,11 +1219,28 @@ function BookingPageContent() {
           <Stack gap="md" className="booking-content-grid">
             <Paper className="booking-panel booking-flight-panel" component="section" withBorder radius="lg" p={{ base: "md", sm: "lg" }} shadow="xs" aria-labelledby="flight-results-title">
               <Stack gap="md">
+                {type === "roundTrip" && (
+                  <SegmentedControl
+                    fullWidth
+                    aria-label="Chặng bay đang chọn"
+                    value={String(activeLegIndex)}
+                    disabled={submitting || searching || loadingSeats || loadingSuggestions}
+                    onChange={value =>
+                    {
+                      if (value === "0") switchActiveLeg(0);
+                      if (value === "1") switchActiveLeg(1);
+                    }}
+                    data={[
+                      { label: `Chuyến đi${selectedFlights[0] ? ` · ${selectedFlights[0].flightNo}` : ""}`, value: "0" },
+                      { label: `Chuyến về${selectedFlights[1] ? ` · ${selectedFlights[1].flightNo}` : ""}`, value: "1", disabled: !selectedFlights[0] },
+                    ]}
+                  />
+                )}
 
-                {(searching || flights.length === 0) && (
+                {(searching || visibleFlights.length === 0) && (
                   <Group justify="space-between" align="center">
-                    <Title order={2} size="xl" id="flight-results-title">Chuyến bay</Title>
-                    {!searching && <Badge color="gray" variant="light">{flights.length} chuyến</Badge>}
+                    <Title order={2} size="xl" id="flight-results-title">{activeLegIndex === 0 ? "Chuyến đi" : "Chuyến về"}</Title>
+                    {!searching && <Badge color="gray" variant="light">{visibleFlights.length} chuyến</Badge>}
                   </Group>
                 )}
                 {searching ? (
@@ -904,7 +1250,7 @@ function BookingPageContent() {
                       <Text size="sm" c="dimmed">Đang tải chuyến bay…</Text>
                     </Stack>
                   </Center>
-                ) : flights.length === 0 ? (
+                ) : visibleFlights.length === 0 ? (
                   <Center mih={220}>
                     <Stack align="center" gap="sm" px="md">
                       <ThemeIcon size={58} radius="xl" color="gray" variant="light">
@@ -917,7 +1263,15 @@ function BookingPageContent() {
                           <>
                             <Text fw={700} ta="center">Không tìm thấy chuyến bay nào phù hợp</Text>
                             <Text c="dimmed" size="sm" ta="center">
-                              Chuyến bay từ <strong>{searchForm.values.origin || "nơi đi"}</strong> đến <strong>{searchForm.values.destination || "nơi đến"}</strong> trong {searchPeriod === "day" ? <>ngày <strong>{searchForm.values.date ? dateFormater(searchForm.values.date, "dd/MM/yyyy") : "đã chọn"}</strong></> : <>tháng <strong>{searchForm.values.month?.slice(0, 7) ?? "đã chọn"}</strong></>} không có sẵn.
+                              Chuyến bay từ
+                              <strong>{displayedOrigin || "nơi đi"}</strong>
+                              đến
+                              <strong>{displayedDestination || "nơi đến"}</strong>
+                              trong
+                              {searchPeriod === "day"
+                                ? <>ngày <strong>{displayedDate ? dateFormater(displayedDate, "dd/MM/yyyy") : "đã chọn"}</strong></>
+                                : <>tháng <strong>{displayedDate?.slice(0, 7) ?? "đã chọn"}</strong></>}
+                              không có sẵn.
                             </Text>
                           </>
                         )}
@@ -932,14 +1286,16 @@ function BookingPageContent() {
                         <Group className="booking-list-heading" justify="space-between" align="center" gap="sm" mb="xs">
 
 
-                          <Title order={2} size="xl" id="flight-results-title">Chuyến bay</Title>
+                          <Title order={2} size="xl" id="flight-results-title">{activeLegIndex === 0 ? "Chuyến đi" : "Chuyến về"}</Title>
 
-                          <Badge color="gray" variant="light">{flights.length} chuyến</Badge>
+                          <Badge color="gray" variant="light">{visibleFlights.length} chuyến</Badge>
                         </Group>
 
                         <Stack className="booking-flight-list" gap="sm">
-                          {flights.map((item) => {
+                          {visibleFlights.map((item) =>
+                          {
                             const isSelected = flight?.flightId === item.flightId;
+                            const wasSelected = !isSelected && selectedFlightIds.has(item.flightId);
                             const soldOut = item.availableSeats === 0;
 
                             const tone = item.airlineCode === "VJ" ? "vietjet" : item.airlineCode === "VN" ? "vietnam" : item.airlineCode === "QH" ? "bamboo" : item.airlineCode === "VU" ? "vietravel" : "orther";
@@ -955,10 +1311,12 @@ function BookingPageContent() {
                                   radius="lg"
                                   p="md"
                                   className={`booking-flight-card ticket-ref ticket-ref--${carrier.tone}${isSelected ? " ticket-ref--selected" : ""}`}
-                                  disabled={submitting || searching}
+                                  disabled={submitting || searching || (activeLegIndex === 1 && !selectedFlights[0])}
                                   aria-pressed={isSelected}
-                                  aria-label={`${item.flightNo}, ${item.origin} đến ${item.destination}, ${money(item.price)}. ${soldOut ? "Hết chỗ" : `Còn ${item.availableSeats} ghế`}`}
-                                  onClick={() => {
+                                  aria-label={`${item.flightNo}, ${item.origin} đến ${item.destination}, ${money(item.price)}. ${isSelected ? "Đang chọn." : wasSelected ? "Đã chọn trước đó." : soldOut ? "Hết chỗ" : `Còn ${item.availableSeats} ghế`}`}
+                                  onClick={() =>
+                                  {
+                                    if (soldOut || (activeLegIndex === 1 && !selectedFlights[0])) return;
                                     toggleChooseFlight(item);
                                   }}
                                 >
@@ -1036,12 +1394,19 @@ function BookingPageContent() {
                                         )}
                                       </Group>
                                     </Stack>
-                                    <Box className="ticket-ref__cta" aria-hidden="true">
-                                      <Text span fw={500}>
-                                        {isSelected ? "Đang chọn" : soldOut ? "Hết chỗ" : "Chọn chuyến"}
-                                      </Text>
-                                      {isSelected ? <IconArrowDown size={16} /> : <IconArrowRight size={16} />}
-                                    </Box>
+                                    {!soldOut && (
+
+                                      <Box className="ticket-ref__cta" aria-hidden="true">
+                                        <Text span fw={500}>
+                                          {isSelected ? "Đang chọn" : wasSelected ? "Đã chọn" : "Chọn chuyến"}
+                                        </Text>
+                                        {isSelected
+                                          ? <IconArrowDown size={16} />
+                                          : wasSelected
+                                            ? <IconCircleCheck size={16} />
+                                            : <IconArrowRight size={16} />}
+                                      </Box>
+                                    )}
                                   </Box>
                                 </Paper>
                                 <Divider my="sm" />
@@ -1056,23 +1421,61 @@ function BookingPageContent() {
                                 {flight && flight.flightId === item.flightId && !loadingSeats && !allPassengersBooked && (
                                   <Stack gap="lg">
 
-                                    {flights?.length > 1 && (
-                                      <Flex justify="flex-end">
-                                        <Button
-                                          variant="light"
-                                          color="gray"
-                                          size="sm"
-                                          onClick={() => {
-                                            setFlight(null);
-                                            setSeats([]);
-                                            setPassengers([createPassenger()]);
-                                            setActivePassengerIndex(0);
-                                          }} disabled={submitting}>
-                                          Đổi chuyến
-                                        </Button>
-                                      </Flex>
-                                    )}
+
+                                    <Flex justify="flex-end">
+
+                                      <Button
+                                        variant="light"
+                                        color="gray"
+                                        size="sm"
+                                        onClick={() =>
+                                        {
+                                          setSelectedFlights(current =>
+                                          {
+                                            const next = [...current] as [Flight | null, Flight | null];
+                                            next[activeLegIndex] = null;
+                                            if (activeLegIndex === 0) next[1] = null;
+                                            return next;
+                                          });
+                                          setSelectedFlightIds(current =>
+                                          {
+                                            const next = new Set(current);
+                                            if (flight) next.delete(flight.flightId);
+                                            if (activeLegIndex === 0 && selectedFlights[1]) next.delete(selectedFlights[1]!.flightId);
+                                            return next;
+                                          });
+                                          setSeats([]);
+                                          setSeatsByLeg(current =>
+                                          {
+                                            const next = [...current] as [Seat[], Seat[]];
+                                            next[activeLegIndex] = [];
+                                            if (activeLegIndex === 0) next[1] = [];
+                                            return next;
+                                          });
+                                          bookingForm.setFieldValue("passengers", current => current.map(passenger => ({
+                                            ...passenger,
+                                            seatIds: activeLegIndex === 0
+                                              ? ["", ""]
+                                              : passenger.seatIds.map((seatId, index) => index === activeLegIndex ? "" : seatId),
+                                          })));
+                                          bookingForm.setFieldValue("flightIds", activeLegIndex === 0
+                                            ? []
+                                            : selectedFlights[0] ? [selectedFlights[0].flightId] : []);
+                                          setActivePassengerIndex(0);
+                                          setSuggestedFlights([]);
+                                          setSuggestionError("");
+                                          setLoadingSuggestions(false);
+                                          setError("");
+                                        }}
+                                        disabled={submitting}
+                                      >
+                                        Đổi chuyến
+                                      </Button>
+
+                                    </Flex>
+
                                     {flight.availableSeats < requiredSeatCount && (
+
                                       <Alert
                                         color={suggestionError ? "red" : "orange"}
                                         variant="light"
@@ -1081,8 +1484,11 @@ function BookingPageContent() {
                                         <Stack gap="sm">
                                           <Text size="sm">
                                             Cần {requiredSeatCount} ghế cho {adultCount} người lớn và {childCount} trẻ em; chuyến hiện còn {flight.availableSeats} ghế.
+
                                             {infantCount > 0 ? ` ${infantCount} trẻ dưới 2 tuổi ngồi cùng người lớn, không cần ghế.` : ""}
+
                                           </Text>
+
                                           {loadingSuggestions && <Text size="sm">Đang tìm chuyến gần giờ hoặc ngày liền kề…</Text>}
 
                                           {suggestionError && <Text size="sm">{suggestionError}</Text>}
@@ -1092,6 +1498,7 @@ function BookingPageContent() {
                                           )}
 
                                           {suggestedFlights.map(candidate => (
+
                                             <Button
                                               key={candidate.flightId}
                                               type="button"
@@ -1104,7 +1511,9 @@ function BookingPageContent() {
                                             >
                                               {flightDate(candidate.departureTime) === flightDate(flight.departureTime)
                                                 ? `Cùng ngày · ${new Date(candidate.departureTime).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" })}`
+
                                                 : `${new Date(candidate.departureTime).toLocaleDateString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", day: "2-digit", month: "2-digit" })} · ${new Date(candidate.departureTime).toLocaleTimeString("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", hour: "2-digit", minute: "2-digit" })}`}
+
                                               {" · "}{candidate.flightNo} · còn {candidate.availableSeats} ghế
                                             </Button>
                                           ))}
@@ -1120,15 +1529,31 @@ function BookingPageContent() {
                                         childCount={childCount}
                                         infantCount={infantCount}
                                         passengers={passengers}
+                                        seats={seats}
                                         form={bookingForm}
+                                        activeLegIndex={activeLegIndex}
+                                        activeLegLabel={activeLegIndex === 0 ? "Chuyến đi" : "Chuyến về"}
                                       />
 
                                       <SectionBookingSeat
                                         passengers={passengers}
                                         seats={seats}
                                         adultCount={adultCount}
+                                        activeLegIndex={activeLegIndex}
                                         availableSeats={availableSeats}
-                                        onSelectedSeats={setPassengers}
+                                        onSelectedSeats={(passengerIndex, seatId) =>
+                                        {
+                                          bookingForm.setFieldValue("passengers", current =>
+                                            current.map((passenger, index) => index === passengerIndex
+                                              ? {
+                                                ...passenger,
+                                                seatIds: passenger.seatIds.map((currentSeatId, legIndex) =>
+                                                  legIndex === activeLegIndex
+                                                    ? currentSeatId === seatId ? "" : seatId
+                                                    : currentSeatId),
+                                              }
+                                              : passenger));
+                                        }}
                                       />
                                     </Paper>
                                   </Stack>
@@ -1152,165 +1577,233 @@ function BookingPageContent() {
                           aria-labelledby="seat-passenger-title"
                         >
                           <Title order={2} size="lg" id="seat-passenger-title">Thông tin tìm kiếm</Title>
-
-                          <Divider />
                           {searchForm.values && (
-                            <Paper p="sm" withBorder>
+                            <Paper p="sm" withBorder my="xs">
                               <InfoRow label="Loại chuyến bay" value={type === "oneWay" ? "Một chiều" : "Khứ hồi"} />
-                              <InfoRow label="Nơi đi" value={getName(airportOptions, searchForm.values?.origin)} />
-                              <InfoRow label="Nơi đến" value={getName(airportOptions, searchForm.values?.destination)} />
-                              <InfoRow label="Thời gian khởi hành" value={searchForm.values.date ? dateFormater(searchForm.values.date, "dd/MM/yyyy") : dateFormater(searchForm.values.month, "MM/yyyy")} />
-                              <InfoRow label="Số lượng vé" value={
-                                <Stack>
+                              <InfoRow label="Nơi đi" value={getName(airportOptions, displayedOrigin)} />
+                              <InfoRow label="Nơi đến" value={getName(airportOptions, displayedDestination)} />
+                              <InfoRow
+                                label={activeLegIndex === 0 ? "Thời gian đi" : "Thời gian về"}
+                                value={searchPeriod === "day"
+                                  ? dateFormater(displayedDate, "dd/MM/yyyy")
+                                  : dateFormater(displayedDate, "MM/yyyy")}
+                              />
+                              {type === "roundTrip" && (
+                                <InfoRow
+                                  label="Thời gian về"
+                                  value={searchForm.values.returnDate
+                                    ? dateFormater(searchForm.values.returnDate, "dd/MM/yyyy")
+                                    : dateFormater(searchForm.values.returnMonth, "MM/yyyy")}
+                                />
+                              )}
+                              <InfoRow label="Số lượng vé"
+                                last
+                                labelProps={{
+                                  color: "dark"
+                                }}
+                                value={
+                                  <Stack>
 
-                                  {adultCount > 0 && (
-                                    <Text fw={500}>
-                                      {adultCount} người lớn
-                                    </Text>
-                                  )}
+                                    {adultCount > 0 && (
+                                      <Text fw={500} c="green">
+                                        {adultCount} người lớn
+                                      </Text>
+                                    )}
 
-                                  {childCount > 0 && (
-                                    <Text fw={500}>
-                                      {childCount} trẻ em
-                                    </Text>
-                                  )}
+                                    {childCount > 0 && (
+                                      <Text fw={500} c="teal">
+                                        {childCount} trẻ em
+                                      </Text>
+                                    )}
 
-                                  {infantCount > 0 && (
-                                    <Text fw={500}>
-                                      {infantCount} trẻ dưới 2 tuổi
-                                    </Text>
-                                  )}
+                                    {infantCount > 0 && (
+                                      <Text fw={500} c="orange">
+                                        {infantCount} trẻ dưới 2 tuổi
+                                      </Text>
+                                    )}
 
-                                </Stack>
-                              }
+                                  </Stack>
+                                }
                               />
                             </Paper>
                           )}
 
                           <Divider my="xs" variant="dashed" />
 
-                          {flight && (
-                            <Paper p="sm" withBorder bg="var(--mantine-color-teal-0)">
+                          {selectedBookingFlights.map((summaryFlight, legIndex) => summaryFlight && (
+                            <Paper key={summaryFlight.flightId} p="sm" withBorder bg="var(--mantine-color-teal-0)" mb="sm">
                               <Paper className="booking-flight-summary" p="md" radius="lg" withBorder>
                                 <Group gap="md" align="center" wrap="nowrap">
                                   <ThemeIcon size={42} radius="md" color="blue" variant="light" style={{ flexShrink: 0 }}>
                                     <IconPlane size={23} />
                                   </ThemeIcon>
                                   <Stack gap={3} style={{ flex: 1, minWidth: 0 }}>
-                                    <Group justify="space-between" >
-                                      <Text fw={500}>
-                                        {flight.flightNo}
-                                      </Text>
-                                      <Text fw={500}>
-                                        {flight.origin} → {flight.destination}
-                                      </Text>
+                                    <Group justify="space-between">
+                                      <Stack gap={0}>
+                                        <Text fw={600} className="ticket-ref__brand" title={summaryFlight.airlineName}>
+                                          {legIndex === 0 ? "Chuyến đi" : "Chuyến về"} · {summaryFlight.airlineName}
+                                        </Text>
+                                        <Text fw={500}>{summaryFlight.flightNo}</Text>
+                                      </Stack>
+                                      <Text fw={500}>{summaryFlight.origin} → {summaryFlight.destination}</Text>
                                     </Group>
                                     <Text c="dimmed" size="sm" lineClamp={2}>
-                                      {flight.originCity} → {flight.destinationCity}
+                                      {summaryFlight.originCity} → {summaryFlight.destinationCity} · {dateFormat(summaryFlight.departureTime, "dd/MM/yyyy")}
                                     </Text>
                                   </Stack>
-
                                 </Group>
                               </Paper>
-                              <InfoRow label="Ngày khởi hành" value={dateFormater(flight.departureTime, "dd/MM/yyyy")} />
-                              <InfoRow label="Giờ cất cánh" value={dateFormater(flight.departureTime, "HH:mm")} />
-                              <InfoRow label="Giờ hạ cánh" value={dateFormater(flight.arrivalTime, "HH:mm")} />
-                              <Divider variant="dashed" />
-                              {passengers?.map((passenger) => {
-                                const booking = passenger.booking
-                                if (!booking) return null;
+                              {passengers.map((passenger, index) =>
+                              {
+                                const seatId = passenger.seatIds[legIndex];
+                                const seatNo = seatsByLeg[legIndex].find(seat => seat.seatId === seatId)?.seatNo;
                                 return (
-
-                                  <InfoRow label="Dịch vụ kèm theo" value={
-                                    <Stack gap="xs">
-                                      {booking.baggageKg && (
-
-                                        <Text>
-                                          Hành lý ký gửi: {booking.baggageKg} kg
-                                        </Text>
-                                      )}
-
-                                      {booking.mealCode && (
-
-                                        <Text>
-                                          Suất ăn: {mealLabels[booking.mealCode] ?? "Suất ăn"}
-                                        </Text>
-                                      )}
-
-                                    </Stack>
-                                  }
-                                  />
-                                )
+                                  <Text key={`${summaryFlight.flightId}-${index}`} size="sm" mt="xs">
+                                    {passenger.passengerName || `Hành khách ${index + 1}`} · Ghế {seatNo ?? "Chưa chọn"}
+                                  </Text>
+                                );
                               })}
+                            </Paper>
+                          ))}
+                          {confirmationPassengers.length > 0 && (
+                            <Paper withBorder radius="md" p="sm" mt="sm">
+                              <Title order={3} size="md">Xác nhận hành trình và chi phí</Title>
+                              <Text size="sm" c="dimmed" mt={4}>Kiểm tra từng chặng trước khi gửi yêu cầu đặt vé.</Text>
+                              <Stack gap="xs" mt="sm">
+                                {confirmationPassengers.map(({ passenger, index, legs, total }) => (
+                                  <Paper key={`review-${index}`} withBorder radius="md" p="sm">
+                                    <Text fw={700}>
+                                      {passenger.passengerName} · {passenger.passengerType === "CHILD" ? "Trẻ em" : "Người lớn"}
+                                    </Text>
+                                    {legs.map((leg, legIndex) => (
+                                      <Stack key={`${index}-${leg.flight.flightId}`} gap={4} mt="xs">
+                                        <Text fw={600} size="sm">
+                                          {legIndex === 0 ? "Chuyến đi" : "Chuyến về"} · {leg.flight.flightNo} · Ghế {leg.seat.seatNo}
+                                        </Text>
+                                        <Group justify="space-between" gap="xs">
+                                          <Text size="sm">Giá vé</Text>
+                                          <Text size="sm">{money(leg.fare)} {leg.flight.currency}</Text>
+                                        </Group>
+                                        <Group justify="space-between" gap="xs">
+                                          <Text size="sm">Phụ thu hạng {cabinLabels[leg.seat.cabinClass] ?? leg.seat.cabinClass}</Text>
+                                          <Text size="sm">{money(leg.cabinFee)} {leg.flight.currency}</Text>
+                                        </Group>
+                                        <Group justify="space-between" gap="xs">
+                                          <Text size="sm">Phụ thu ghế {leg.seat.seatNo}</Text>
+                                          <Text size="sm">{money(leg.seatFee)} {leg.flight.currency}</Text>
+                                        </Group>
+                                        <Group justify="space-between" gap="xs">
+                                          <Text size="sm">Hành lý {leg.baggageKg ? `${leg.baggageKg} kg` : "(không mua)"}</Text>
+                                          <Text size="sm">{money(leg.baggageFee)} {leg.flight.currency}</Text>
+                                        </Group>
+                                        <Group justify="space-between" gap="xs">
+                                          <Text size="sm">Suất ăn {leg.mealCode ? mealLabels[leg.mealCode] ?? leg.mealCode : "(không chọn)"}</Text>
+                                          <Text size="sm">{money(leg.mealFee)} {leg.flight.currency}</Text>
+                                        </Group>
+                                      </Stack>
+                                    ))}
+                                    <Divider my="xs" />
+                                    <Group justify="space-between">
+                                      <Text fw={700}>Tổng hành khách {index + 1}</Text>
+                                      <Text fw={700}>{money(total)} {selectedBookingFlights[0]?.currency}</Text>
+                                    </Group>
+                                  </Paper>
+                                ))}
+                              </Stack>
+                              <Divider my="sm" />
+                              <Group justify="space-between">
+                                <Text fw={700}>Tổng cộng</Text>
+                                <Text fw={800} size="lg" c="blue.7">{money(confirmationTotal)} {selectedBookingFlights[0]?.currency}</Text>
+                              </Group>
+                              <Group justify="flex-end" mt="sm">
+                                <Button
+                                  color="blue"
+                                  loading={submitting}
+                                  disabled={confirmationPassengers.length !== passengers.filter(passenger => passenger.booking === null).length}
+                                  onClick={() => void handleSubmit()}
+                                >
+                                  Xác nhận đặt vé
+                                </Button>
+                              </Group>
                             </Paper>
                           )}
 
+                          <Paper>
+                            {allPassengersBooked && (
+                              <Stack align="center" gap="md" py={{ base: "md", sm: "xl" }} role="status">
+                                <ThemeIcon color="teal" size={74} radius="xl" variant="light">
+                                  <IconCircleCheck size={44} />
+                                </ThemeIcon>
+                                <Stack align="center" gap={5}>
+                                  <Text tt="uppercase" fw={800} size="sm" c="teal.7" lts={1}>
+                                    Đặt {passengers.length} vé hoàn tất
+                                  </Text>
+                                  <Title order={3} size="xl" ta="center">Các chuyến đi đã được xác nhận</Title>
+                                  {passengers[0]?.booking?.groupCode && (
+                                    <Badge color="blue" variant="light" size="lg">
+                                      Mã đặt chỗ chung · {passengers[0].booking.groupCode}
+                                    </Badge>
+                                  )}
+                                  {infantCount > 0 && (
+                                    <Text size="sm" c="dimmed" ta="center">
+                                      Còn {infantCount} trẻ dưới 2 tuổi đi cùng người lớn · không cần ghế, miễn phí.
+                                    </Text>
+                                  )}
+                                </Stack>
+                                {bookingForm.values.passengers?.map((passenger, index) =>
+                                {
+                                  const booking = passenger.booking;
+                                  if (!booking) return null;
+                                  const tickets = passenger.bookings?.length ? passenger.bookings : [booking];
+                                  return tickets.map(ticket => (
+                                    <Paper key={ticket.bookingId} className="booking-confirmed-ticket" withBorder radius="lg" p="lg" w="100%">
+                                      <Stack gap="sm">
+                                        <Group justify="space-between" align="center" wrap="wrap">
+                                          <Text fw={700}>{booking.passengerName}</Text>
+                                          <Badge color={passenger.passengerType === "CHILD" ? "blue" : "teal"} variant="light">
+                                            {passenger.passengerType === "CHILD" ? "Trẻ em · 75%" : "Người lớn"}
+                                          </Badge>
+                                          <Badge color="teal" variant="light" size="lg">{booking.status}</Badge>
+                                        </Group>
+                                        <Group gap="xs" justify="space-between" wrap="wrap">
+                                          <Text>
+                                            {ticket.legNo === 2 ? "Chuyến về" : ticket.legNo === 1 ? "Chuyến đi" : "Chuyến bay"} · {ticket.flightNo} · Ghế {ticket.seatNo}
+                                          </Text>
+                                          <Badge color="blue" variant="light">
+                                            {cabinLabels[ticket.cabinClass] ?? ticket.cabinClass}
+                                          </Badge>
+                                        </Group>
+                                        <Group justify="space-between" align="center" wrap="wrap">
+                                          <Text size="sm" c="dimmed">Mã vé · {ticket.bookingCode}</Text>
+                                          <Text fw={700} c="blue.7" size="lg">{money(ticket.amount)}</Text>
+                                        </Group>
+                                        <Group justify="space-between" align="center" wrap="wrap">
+                                          <Group gap="xs">
+                                            <Badge color="blue" variant="light">
+                                              Phụ thu hạng {money(ticket.cabinFee)}
+                                            </Badge>
+                                            <Badge color={ticket.seatFee > 0 ? "orange" : "teal"} variant="light">
+                                              {ticket.seatFee > 0 ? `Phụ thu ghế ${money(ticket.seatFee)}` : "Ghế tiêu chuẩn"}
+                                            </Badge>
+                                            {ticket.baggageKg && <Badge color="blue" variant="light">Hành lý {ticket.baggageKg} kg</Badge>}
+                                            {ticket.mealCode && <Badge color="grape" variant="light">{mealLabels[ticket.mealCode] ?? "Suất ăn"}</Badge>}
+                                          </Group>
+                                          <Button component={Link} href={`/bookings/${ticket.bookingId}`} size="xs" variant="subtle" rightSection={<IconArrowRight size={14} />}>
+                                            Chi tiết vé
+                                          </Button>
+                                        </Group>
+                                      </Stack>
+                                    </Paper>
+                                  ));
+                                })}
+                              </Stack>
+                            )}
+                          </Paper>
                         </Paper>
                       </Grid.Col>
                     </Grid>
 
 
-                    {/* BƯỚC 3: XÁC NHẬN ĐẶT VÉ THÀNH CÔNG */}
-                    {allPassengersBooked && (
-                      <Stack align="center" gap="md" py={{ base: "md", sm: "xl" }} role="status">
-                        <ThemeIcon color="teal" size={74} radius="xl" variant="light">
-                          <IconCircleCheck size={44} />
-                        </ThemeIcon>
-                        <Stack align="center" gap={5}>
-                          <Text tt="uppercase" fw={800} size="sm" c="teal.7" lts={1}>
-                            Đặt {passengers.length} vé hoàn tất
-                          </Text>
-                          <Title order={3} size="xl" ta="center">Các chuyến đi đã được xác nhận</Title>
-                          {infantCount > 0 && (
-                            <Text size="sm" c="dimmed" ta="center">
-                              Còn {infantCount} trẻ dưới 2 tuổi đi cùng người lớn · không cần ghế, miễn phí.
-                            </Text>
-                          )}
-                        </Stack>
-                        {passengers.map((passenger, index) => {
-                          const booking = passenger.booking;
-                          if (!booking) return null;
-                          return (
-                            <Paper key={booking.bookingId} className="booking-confirmed-ticket" withBorder radius="lg" p="lg" w="100%">
-                              <Stack gap="sm">
-                                <Group justify="space-between" align="center" wrap="wrap">
-                                  <Text fw={700}>{booking.passengerName}</Text>
-                                  <Badge color={passenger.passengerType === "CHILD" ? "blue" : "teal"} variant="light">
-                                    {passenger.passengerType === "CHILD" ? "Trẻ em · 75%" : "Người lớn"}
-                                  </Badge>
-                                  <Badge color="teal" variant="light" size="lg">{booking.status}</Badge>
-                                </Group>
-                                <Group gap="xs" justify="space-between" wrap="wrap">
-                                  <Text>{booking.flightNo} · Ghế {booking.seatNo}</Text>
-                                  <Badge color="blue" variant="light">
-                                    {cabinLabels[booking.cabinClass] ?? booking.cabinClass}
-                                  </Badge>
-                                </Group>
-                                <Group justify="space-between" align="center" wrap="wrap">
-                                  <Text size="sm" c="dimmed">Mã vé · {booking.bookingCode}</Text>
-                                  <Text fw={700} c="blue.7" size="lg">{money(booking.amount)}</Text>
-                                </Group>
-                                <Group justify="space-between" align="center" wrap="wrap">
-                                  <Group gap="xs">
-                                    <Badge color="blue" variant="light">
-                                      Phụ thu hạng {money(booking.cabinFee)}
-                                    </Badge>
-                                    <Badge color={booking.seatFee > 0 ? "orange" : "teal"} variant="light">
-                                      {booking.seatFee > 0 ? `Phụ thu ghế ${money(booking.seatFee)}` : "Ghế tiêu chuẩn"}
-                                    </Badge>
-                                    {booking.baggageKg && <Badge color="blue" variant="light">Hành lý {booking.baggageKg} kg</Badge>}
-                                    {booking.mealCode && <Badge color="grape" variant="light">{mealLabels[booking.mealCode] ?? "Suất ăn"}</Badge>}
-                                  </Group>
-                                  <Button component={Link} href={`/bookings/${booking.bookingId}`} size="xs" variant="subtle" rightSection={<IconArrowRight size={14} />}>
-                                    Chi tiết vé
-                                  </Button>
-                                </Group>
-                              </Stack>
-                            </Paper>
-                          );
-                        })}
-                      </Stack>
-                    )}
                   </Stack>
                 )}
               </Stack>
@@ -1324,7 +1817,8 @@ function BookingPageContent() {
   )
 }
 
-export default function BookingPage() {
+export default function BookingPage()
+{
   return (
     <React.Suspense fallback={null}>
       <BookingPageContent />

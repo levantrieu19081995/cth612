@@ -1,9 +1,8 @@
-import { Flight, FlightBookingRequest } from "@/types/booking";
+import { Flight, FlightBookingRequest, Seat } from "@/types/booking";
 import { Alert, Badge, Box, Divider, Group, NumberInput, Paper, Select, SimpleGrid, Stack, Text, TextInput, ThemeIcon, Title } from "@mantine/core";
 import { PassengerDraft } from "./page";
-import { createFormContext, UseFormReturnType } from "@mantine/form";
+import { UseFormReturnType } from "@mantine/form";
 import { IconArmchair, IconBabyCarriage, IconBriefcase, IconCircleCheck, IconLuggage, IconMail, IconToolsKitchen2Filled, IconUser } from "@tabler/icons-react";
-import SectionBookingSeat from "./SectionBookingSeat";
 
 
 type SectionThongTinKhachHangProps = {
@@ -12,14 +11,17 @@ type SectionThongTinKhachHangProps = {
     adultCount?: number
     childCount?: number
     infantCount?: number
-    passengers?: PassengerDraft[]
+    passengers: PassengerDraft[]
+    seats?: Seat[]
     form: UseFormReturnType<FlightBookingRequest>;
+    activeLegIndex?: number;
+    activeLegLabel?: string;
 
 }
-const SectionThongTinKhachHang = (props: SectionThongTinKhachHangProps) => {
-    const { flight, allPassengersBooked, adultCount = 0, childCount = 0, infantCount = 0, passengers, form } = props;
+const SectionThongTinKhachHang = (props: SectionThongTinKhachHangProps) =>
+{
+    const { flight, allPassengersBooked, adultCount = 0, childCount = 0, infantCount = 0, passengers, seats = [], form, activeLegIndex = 0, activeLegLabel = "Chuyến đi" } = props;
 
-    console.log(">>>>>", flight, "all", allPassengersBooked);
     if (!flight && !allPassengersBooked) return;
 
     return (
@@ -61,9 +63,11 @@ const SectionThongTinKhachHang = (props: SectionThongTinKhachHangProps) => {
                         </Group>
                     </Paper>
                     <Stack gap="xs">
-                        {passengers?.map((passenger, index) => {
+                        {passengers.map((passenger, index) =>
+                        {
                             const isChild = passenger.passengerType === "CHILD";
                             const isBooked = passenger.booking != null;
+                            const selectedSeat = seats.find((seat) => seat.seatId === passenger.seatIds[activeLegIndex]);
                             const passengerNumber = isChild
                                 ? index - adultCount + 1
                                 : index + 1;
@@ -191,6 +195,7 @@ const SectionThongTinKhachHang = (props: SectionThongTinKhachHangProps) => {
                                                 <Group gap="xs">
                                                     <IconBriefcase size={18} />
                                                     <Text fw={650}>Dịch vụ đi kèm</Text>
+                                                    <Badge variant="light" color="blue">{activeLegLabel}</Badge>
                                                     <Badge variant="outline" color="gray">
                                                         Tùy chọn
                                                     </Badge>
@@ -204,15 +209,15 @@ const SectionThongTinKhachHang = (props: SectionThongTinKhachHangProps) => {
                                                         label="Hành lý ký gửi"
                                                         placeholder="Chọn hành lý"
                                                         data={baggageOptions}
-                                                        value={String(
-                                                            form.values.passengers[index]?.baggageKg ?? 0
-                                                        )}
+                                                        value={String(passenger.baggageKgs?.[activeLegIndex] ?? 0)}
                                                         onChange={(value) =>
-                                                            form.setFieldValue(
-                                                                `passengers.${index}.baggageKg`,
-                                                                Number(value ?? 0)
-                                                            )
-                                                        }
+                                                        {
+                                                            const baggageKgs = [...(passenger.baggageKgs ?? [null, null])];
+                                                            baggageKgs[activeLegIndex] = Number(value ?? 0) || null;
+                                                            form.setFieldValue(`passengers.${index}.baggageKgs`, baggageKgs);
+                                                            if (activeLegIndex === 0)
+                                                                form.setFieldValue(`passengers.${index}.baggageKg`, baggageKgs[0] ?? null);
+                                                        }}
                                                         disabled={isBooked}
                                                         leftSection={<IconLuggage size={18} />}
                                                         size="md"
@@ -224,15 +229,15 @@ const SectionThongTinKhachHang = (props: SectionThongTinKhachHangProps) => {
                                                         label="Suất ăn"
                                                         placeholder="Chọn suất ăn"
                                                         data={mealOptions}
-                                                        value={
-                                                            form.values.passengers[index]?.mealCode ?? ""
-                                                        }
+                                                        value={passenger.mealCodes?.[activeLegIndex] ?? ""}
                                                         onChange={(value) =>
-                                                            form.setFieldValue(
-                                                                `passengers.${index}.mealCode`,
-                                                                value ?? ""
-                                                            )
-                                                        }
+                                                        {
+                                                            const mealCodes = [...(passenger.mealCodes ?? ["", ""])];
+                                                            mealCodes[activeLegIndex] = value ?? "";
+                                                            form.setFieldValue(`passengers.${index}.mealCodes`, mealCodes);
+                                                            if (activeLegIndex === 0)
+                                                                form.setFieldValue(`passengers.${index}.mealCode`, mealCodes[0]);
+                                                        }}
                                                         disabled={isBooked}
                                                         leftSection={<IconToolsKitchen2Filled size={18} />}
                                                         size="md"
@@ -241,44 +246,23 @@ const SectionThongTinKhachHang = (props: SectionThongTinKhachHangProps) => {
                                                     />
                                                 </SimpleGrid>
 
-                                                <Paper
-                                                    withBorder
-                                                    radius="md"
-                                                    p="md"
-                                                    bg="var(--mantine-color-default-hover)"
-                                                >
+                                                <Paper withBorder radius="md" p="md">
                                                     <Group gap="sm" wrap="nowrap">
-                                                        <ThemeIcon
-                                                            color="gray"
-                                                            variant="light"
-                                                            size={36}
-                                                            radius="md"
-                                                        >
+                                                        <ThemeIcon color="gray" variant="light" size={36} radius="md">
                                                             <IconArmchair size={20} />
                                                         </ThemeIcon>
-
                                                         <Box style={{ flex: 1, minWidth: 0 }}>
-                                                            <Text fw={600} fz="sm">
-                                                                Ghế ngồi
-                                                            </Text>
+                                                            <Text fw={600} fz="sm">Ghế ngồi</Text>
                                                             <Text c="dimmed" fz="sm">
-                                                                {form.values.passengers[index]?.seatIds?.length
-                                                                    ? `Đã chọn ${form.values.passengers[index].seatIds.length
-                                                                    } ghế`
-                                                                    : "Chưa chọn ghế"}
+                                                                {selectedSeat ? `Đã chọn ghế ${selectedSeat.seatNo}` : "Chưa chọn ghế"}
                                                             </Text>
                                                         </Box>
-
-                                                        <Badge variant="light" color="gray">
-                                                            Tùy chọn
-                                                        </Badge>
                                                     </Group>
-
-
                                                 </Paper>
+
                                             </Stack>
 
-                                            {/* THÔNG TIN ĐẶT VÉ */}
+                                            {/* THÔNG TIN ĐẶT VÉ
                                             {isBooked && (
                                                 <Alert
                                                     color="teal"
@@ -293,7 +277,7 @@ const SectionThongTinKhachHang = (props: SectionThongTinKhachHangProps) => {
                                                         Mã đặt chỗ: {passenger?.booking?.bookingCode}
                                                     </Text>
                                                 </Alert>
-                                            )}
+                                            )} */}
                                         </Stack>
                                     </Paper>
 

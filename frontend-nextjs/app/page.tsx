@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import {
+import
+{
   Alert,
   Badge,
   Box,
@@ -15,7 +16,8 @@ import {
   ThemeIcon,
   Title,
 } from "@mantine/core";
-import {
+import
+{
   IconActivityHeartbeat,
   IconArrowDown,
   IconArrowRight,
@@ -54,7 +56,8 @@ const systemPages = [
   },
 ];
 
-export default function HomePage() {
+export default function HomePage()
+{
   const [offlineNode, setOfflineNode] = useState<number | null>(null);
   const remainingCopies = offlineNode === null ? 3 : 2;
 
@@ -117,7 +120,7 @@ export default function HomePage() {
                 <Box>
                   <Text fw={750}>Sơ đồ cụm dữ liệu</Text>
                   <Text size="sm" c="dimmed">
-                      Mô hình minh họa: 4 node, mỗi dữ liệu có 3 bản sao; không phải trạng thái máy thật.
+                    Mô hình minh họa: 4 node, mỗi dữ liệu có 3 bản sao; không phải trạng thái máy thật.
                   </Text>
                 </Box>
                 <Badge
@@ -151,8 +154,10 @@ export default function HomePage() {
                 <div className="overview-flow-connector" aria-hidden="true">
                   <IconArrowDown size={20} />
                 </div>
+
                 <div className="overview-node-grid" aria-label="Mô hình bốn node dữ liệu">
-                  {nodes.map((node) => {
+                  {nodes.map((node) =>
+                  {
                     const isOffline = offlineNode === node;
                     return (
                       <button
@@ -177,10 +182,13 @@ export default function HomePage() {
                           </Badge>
                         </Group>
                         <Text fw={750} mt="sm">Node {String(node).padStart(2, "0")}</Text>
-                        <Text size="xs" c="dimmed" mt={3}>
+                        <Text size="xs" c="var(--mantine-color-white)" mt={3}>
                           CockroachDB · Cassandra
                         </Text>
-                        <Text size="xs" mt="xs" c={isOffline ? "red.7" : "teal.7"}>
+                        <Text size="xs" mt="xs" c="var(--mantine-color-white)"
+                          style={{
+                            textDecoration: isOffline ? "line-through" : undefined
+                          }}>
                           {isOffline ? "Node được mô phỏng ngắt" : "Tham gia lưu trữ dữ liệu"}
                         </Text>
                       </button>

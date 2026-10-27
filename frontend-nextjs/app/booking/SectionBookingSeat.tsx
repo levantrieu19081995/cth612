@@ -1,10 +1,11 @@
 import { Badge, Box, Button, Group, Paper, ScrollArea, Stack, Text, Title } from "@mantine/core";
 import { PassengerDraft } from "./page";
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useState } from "react";
 import { Seat } from "@/types/booking";
 import { money } from "@/components/utils/func";
 
-const seatPrice = (seatNo: string) => {
+const seatPrice = (seatNo: string) =>
+{
   if (seatNo.startsWith("01")) return 100000;
   if (seatNo.endsWith("A") || seatNo.endsWith("F")) return 50000;
   return 0;
@@ -28,15 +29,18 @@ const SectionBookingSeat = (
     availableSeats,
     adultCount,
     seats,
+    activeLegIndex,
     onSelectedSeats
   }: {
     passengers: PassengerDraft[],
     availableSeats: number,
     adultCount: number,
     seats: Seat[],
-    onSelectedSeats: Dispatch<SetStateAction<PassengerDraft[]>>
+    activeLegIndex: number,
+    onSelectedSeats: (activeIndex: number, seatId: string) => void
 
-  }) => {
+  }) =>
+{
 
   const [activePassengerIndex, setActivePassengerIndex] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -94,7 +98,7 @@ const SectionBookingSeat = (
                 disabled={submitting || passenger.booking !== null}
               >
                 {passenger.passengerType === "CHILD" ? `Trẻ em ${index - adultCount + 1}` : `Người lớn ${index + 1}`}
-                {passenger.seatId ? " · đã có ghế" : ""}
+                {passenger.seatIds[activeLegIndex] ? " · đã có ghế" : ""}
               </Button>
             ))}
           </Group>
@@ -131,8 +135,9 @@ const SectionBookingSeat = (
                     style={{ gridColumn: 1, gridRow: index + 2 }}
                   >{String(index + 1).padStart(2, "0")}</Text>
                 ))}
-                {seats.map((item, index) => {
-                  const assignedPassengerIndex = passengers.findIndex(passenger => passenger.seatId === item.seatId);
+                {seats.map((item, index) =>
+                {
+                  const assignedPassengerIndex = passengers.findIndex(passenger => passenger.seatIds[activeLegIndex] === item.seatId);
                   const isChosen = assignedPassengerIndex >= 0;
                   const isAvailable = item.status === "AVAILABLE";
                   const columnInRow = index % 6;
@@ -152,14 +157,12 @@ const SectionBookingSeat = (
                       color={isChosen ? "blue" : isAvailable ? "teal" : "gray"}
                       disabled={!isAvailable || submitting ||
                         (assignedPassengerIndex >= 0 && assignedPassengerIndex !== activePassengerIndex) ||
-                        passengers[activePassengerIndex]?.booking !== null}
+                        Boolean(passengers[activePassengerIndex]?.booking)}
                       aria-pressed={isChosen}
                       aria-label={`Ghế ${item.seatNo}, hạng ${cabinLabels[item.cabinClass] ?? item.cabinClass}${isChosen ? `, hành khách ${assignedPassengerIndex + 1} đã chọn` : isAvailable ? " còn trống" : " không còn trống"}, phụ thu hạng ${money(classPrice)}${price ? `, phụ thu vị trí ${money(price)}` : ""}`}
-                      onClick={() => {
-                        onSelectedSeats(current => current.map((passenger, passengerIndex) =>
-                          passengerIndex === activePassengerIndex
-                            ? { ...passenger, seatId: passenger.seatId === item.seatId ? null : item.seatId }
-                            : passenger));
+                      onClick={() =>
+                      {
+                        onSelectedSeats(activePassengerIndex, item.seatId);
                       }}
                       style={{
                         gridColumn: columnInRow < 3 ? columnInRow + 2 : columnInRow + 3,
