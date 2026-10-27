@@ -1,4 +1,4 @@
-export const MOCK_DATA = [
+export const MOCK_DATA: Flight[] = [
   {
     flightId: "361a7b86-6241-3b11-a33f-62889da04048",
     flightNo: "VN102",

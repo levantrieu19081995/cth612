@@ -60,7 +60,7 @@ import 'dayjs/locale/vi';
 
 import React, { useEffect, useRef, useState } from "react";
 import { ApiError, apiGet, apiPost } from "../../lib/api";
-import { type Flight, type Seat, type Booking, type BookingGroup, type CreateBookingGroup, type FlightBookingPassenger, type FlightBookingRequest } from "../../types/booking";
+import { type Flight, type Seat, type Booking, type BookingGroup, type CreateBookingGroup, type FlightBookingPassenger, type FlightBookingRequest, MOCK_DATA, MOCK_SEATS } from "../../types/booking";
 import Link from "next/link";
 
 import { useForm } from "@mantine/form";
@@ -73,6 +73,7 @@ import { InfoRow } from "@/components/Share";
 import { flightDuration, getName, money } from "@/components/utils/func";
 import SectionThongTinKhachHang from "./SectionThongTinKhachHang";
 import SectionBookingSeat from "./SectionBookingSeat";
+import { numberToCurrency } from "@/components/utils/currency";
 
 
 const mealLabels: Record<string, string> = {
@@ -94,6 +95,52 @@ const airportOptions = [
   { value: "DAD", label: "Đà Nẵng (DAD)" },
   { value: "VCA", label: "Cần Thơ (VCA)" },
 ];
+
+function getMockFlights(
+  origin: string,
+  destination: string,
+  date: string | null,
+  month: string | null,
+  requiredSeats: number,
+): Flight[]
+{
+  const routeTemplates = MOCK_DATA.filter(flight =>
+    flight.origin === origin && flight.destination === destination);
+  const templates = routeTemplates.length > 0 ? routeTemplates : MOCK_DATA;
+  const city = (code: string) => airportOptions.find(airport => airport.value === code)?.label.replace(/\s\([A-Z]+\)$/, "") ?? code;
+  const dates = date
+    ? [date.slice(0, 10)]
+    : month
+      ? [10, 20, 28].map(day =>
+      {
+        const [year, selectedMonth] = month.slice(0, 7).split("-").map(Number);
+        const lastDay = new Date(Date.UTC(year, selectedMonth, 0)).getUTCDate();
+        return `${month.slice(0, 7)}-${String(Math.min(day, lastDay)).padStart(2, "0")}`;
+      })
+      : [];
+
+  return Array.from({ length: Math.min(3, templates.length) }, (_, index) =>
+  {
+    const template = templates[index % templates.length];
+    const departureDate = dates[index % dates.length] ?? template.departureTime.slice(0, 10);
+    const departure = new Date(`${departureDate}T${String(14 + index * 3).padStart(2, "0")}:00:00+07:00`);
+    const arrival = new Date(departure.getTime() + (90 + index * 20) * 60_000);
+    return {
+      ...template,
+      flightId: template.flightId,
+      flightNo: `DEMO-${template.airlineCode}${String(100 + index)}`,
+      origin,
+      destination,
+      originCity: city(origin),
+      destinationCity: city(destination),
+      departureTime: departure.toISOString(),
+      arrivalTime: arrival.toISOString(),
+      status: "SCHEDULED",
+      availableSeats: Math.max(template.availableSeats, requiredSeats),
+      sufficientSeats: true,
+    };
+  });
+}
 
 export type PassengerDraft = FlightBookingPassenger;
 
@@ -153,6 +200,7 @@ function BookingPageContent()
   const [type, setType] = useState<"oneWay" | "roundTrip">("oneWay")
   const [flights, setFlights] = useState<Flight[]>([]);
   const [returnFlights, setReturnFlights] = useState<Flight[]>([]);
+  const [mockFlightIds, setMockFlightIds] = useState<Set<string>>(() => new Set());
   const [selectedFlightIds, setSelectedFlightIds] = useState<Set<string>>(() => new Set());
   const [activeLegIndex, setActiveLegIndex] = useState<0 | 1>(0);
   const [selectedFlights, setSelectedFlights] = useState<[Flight | null, Flight | null]>([null, null]);
@@ -180,6 +228,7 @@ function BookingPageContent()
   const [loadingSeats, setLoadingSeats] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [mockNotice, setMockNotice] = useState("");
 
   const seatRequest = useRef(0);
   const searchRequest = useRef(0);
@@ -297,6 +346,7 @@ function BookingPageContent()
     setActivePassengerIndex(0);
     setSelectedFlights([null, null]);
     setSelectedFlightIds(new Set());
+    setMockFlightIds(new Set());
     setSeats([]);
     setSeatsByLeg([[], []]);
     setLoadingSeats(false);
@@ -304,6 +354,7 @@ function BookingPageContent()
     setSuggestionError("");
     setLoadingSuggestions(false);
     setError("");
+    setMockNotice("");
     ++seatRequest.current;
   }
 
@@ -348,8 +399,10 @@ function BookingPageContent()
     setSearching(true);
     setLoadingSeats(false);
     setError("");
+    setMockNotice("");
     setFlights([]);
     setReturnFlights([]);
+    setMockFlightIds(new Set());
     setSelectedFlights([null, null]);
     setSeats([]);
     setSeatsByLeg([[], []]);
@@ -377,30 +430,46 @@ function BookingPageContent()
           : {}),
         requiredSeats: requiredSeatCount,
       };
+      const returnRequest = {
+        origin: values.destination,
+        destination: values.origin,
+        ...(searchPeriod === "day" && values.returnDate
+          ? { date: values.returnDate.slice(0, 10) }
+          : {}),
+        ...(searchPeriod === "month" && values.returnMonth
+          ? { month: values.returnMonth.slice(0, 7) }
+          : {}),
+        requiredSeats: requiredSeatCount,
+      };
       const requests = [
-        __getTimChuyenBay(outboundRequest),
-        ...(type === "roundTrip" ? [__getTimChuyenBay({
-          origin: values.destination,
-          destination: values.origin,
-          ...(searchPeriod === "day" && values.returnDate
-            ? { date: values.returnDate.slice(0, 10) }
-            : {}),
-          ...(searchPeriod === "month" && values.returnMonth
-            ? { month: values.returnMonth.slice(0, 7) }
-            : {}),
-          requiredSeats: requiredSeatCount,
-        })] : []),
+        { request: outboundRequest, origin: values.origin, destination: values.destination },
+        ...(type === "roundTrip" ? [{ request: returnRequest, origin: values.destination, destination: values.origin }] : []),
       ];
-      const results = await Promise.all(requests);
+      const results = await Promise.all(requests.map(async ({ request, origin, destination }) =>
+      {
+        try {
+          const data = await __getTimChuyenBay(request);
+          if (data.length > 0) return { flights: data, isMock: false };
+          return {
+            flights: getMockFlights(origin, destination, request.date ?? null, request.month ?? null, requiredSeatCount),
+            isMock: true,
+            reason: "Không tìm thấy chuyến phù hợp trong dữ liệu thực.",
+          };
+        } catch (requestError) {
+          return {
+            flights: getMockFlights(origin, destination, request.date ?? null, request.month ?? null, requiredSeatCount),
+            isMock: true,
+            reason: `Không thể tải dữ liệu thực (${errorText(requestError)}).`,
+          };
+        }
+      }));
       if (requestId !== searchRequest.current) return;
-      setFlights(results[0]);
-      setReturnFlights(results[1] ?? []);
-
-    } catch (err) {
-      if (requestId !== searchRequest.current) return;
-      setFlights([]);
-      setReturnFlights([]);
-      setError(errorText(err));
+      setFlights(results[0].flights);
+      setReturnFlights(results[1]?.flights ?? []);
+      setMockFlightIds(new Set(results.filter(result => result.isMock).flatMap(result => result.flights.map(item => item.flightId))));
+      setMockNotice(results.some(result => result.isMock)
+        ? `${results.filter(result => result.isMock).map(result => result.reason).join(" ")} Đang hiển thị chuyến bay mẫu; không thể đặt vé trong chế độ mẫu.`
+        : "");
 
     } finally {
       if (requestId === searchRequest.current) setSearching(false);
@@ -532,6 +601,17 @@ function BookingPageContent()
     setSuggestionError("");
     setLoadingSeats(true);
     let currentAvailability = item.availableSeats;
+    if (mockFlightIds.has(item.flightId)) {
+      setSeats(MOCK_SEATS);
+      setSeatsByLeg(current =>
+      {
+        const next = [...current] as [Seat[], Seat[]];
+        next[legIndex] = MOCK_SEATS;
+        return next;
+      });
+      setLoadingSeats(false);
+      return;
+    }
     try {
       const data = await apiGet<Seat[]>(`/api/flights/${item.flightId}/seats`);
       currentAvailability = data.filter(seat => seat.status === "AVAILABLE").length;
@@ -624,6 +704,10 @@ function BookingPageContent()
 
   async function handleSubmit()
   {
+    if (selectedBookingFlights.some(selected => selected && mockFlightIds.has(selected.flightId))) {
+      setError("Đây là chuyến bay mẫu. Vui lòng tìm lại khi dữ liệu thực khả dụng để đặt vé.");
+      return;
+    }
     if (submitLock.current || selectedBookingFlights.length !== requiredLegCount ||
       selectedBookingFlights.some(selected => !selected)) {
       setError(type === "roundTrip"
@@ -746,20 +830,20 @@ function BookingPageContent()
                     <ThemeIcon color="teal" size={29} radius="md" variant="filled">
                       <IconCheck size={17} />
                     </ThemeIcon>
-                    <Text size="sm">Lịch bay linh hoạt</Text>
+                    <Text>Lịch bay linh hoạt</Text>
                   </Group>
 
                   <Group className="booking-hero-pill" gap={7} wrap="nowrap">
                     <ThemeIcon color="blue" size={29} radius="md" variant="filled">
                       <IconCheck size={17} /></ThemeIcon>
-                    <Text size="sm">Giá vé minh bạch</Text>
+                    <Text>Giá vé minh bạch</Text>
                   </Group>
 
                   <Group className="booking-hero-pill" gap={7} wrap="nowrap">
                     <ThemeIcon color="orange" size={29} radius="md" variant="filled">
                       <IconArmchair size={17} />
                     </ThemeIcon>
-                    <Text size="sm">Tự chọn chỗ ngồi</Text>
+                    <Text>Tự chọn chỗ ngồi</Text>
                   </Group>
 
                 </Group>
@@ -1157,7 +1241,7 @@ function BookingPageContent()
                     p="sm"
                     icon={<IconAlertCircleFilled size={19} />}
                   >
-                    <Text size="sm">
+                    <Text>
                       {infantCount > 0 && "Em bé ngồi cùng người lớn, miễn phí và không tính ghế."}
                       {infantCount > 0 && childCount > 0 && " "}
                       {childCount > 0 && "Giá cơ bản cho trẻ em bằng 75%."}
@@ -1180,7 +1264,7 @@ function BookingPageContent()
                     {`${adultCount + childCount + infantCount} hành khách`}
                   </Text>
 
-                  <Text size="sm" c="dimmed">
+                  <Text c="dimmed">
                     {type === "roundTrip"
                       ? searchPeriod === "day" ? "Chọn ngày đi và ngày về" : "Chọn tháng đi và tháng về, rồi chọn ngày qua chuyến bay"
                       : searchPeriod === "day" ? "Tìm theo ngày khởi hành" : "Tìm trong tháng khởi hành"}
@@ -1216,6 +1300,11 @@ function BookingPageContent()
               {error}
             </Alert>
           )}
+          {mockNotice && (
+            <Alert icon={<IconInfoCircle size={20} />} title="Đang dùng dữ liệu mẫu" color="yellow" variant="light" radius="md" role="status">
+              {mockNotice}
+            </Alert>
+          )}
           <Stack gap="md" className="booking-content-grid">
             <Paper className="booking-panel booking-flight-panel" component="section" withBorder radius="lg" p={{ base: "md", sm: "lg" }} shadow="xs" aria-labelledby="flight-results-title">
               <Stack gap="md">
@@ -1247,7 +1336,7 @@ function BookingPageContent()
                   <Center mih={180} role="status">
                     <Stack align="center" gap="sm">
                       <Loader size="md" />
-                      <Text size="sm" c="dimmed">Đang tải chuyến bay…</Text>
+                      <Text c="dimmed">Đang tải chuyến bay…</Text>
                     </Stack>
                   </Center>
                 ) : visibleFlights.length === 0 ? (
@@ -1482,19 +1571,19 @@ function BookingPageContent()
                                         title="Chuyến này không đủ ghế cho nhóm"
                                       >
                                         <Stack gap="sm">
-                                          <Text size="sm">
+                                          <Text>
                                             Cần {requiredSeatCount} ghế cho {adultCount} người lớn và {childCount} trẻ em; chuyến hiện còn {flight.availableSeats} ghế.
 
                                             {infantCount > 0 ? ` ${infantCount} trẻ dưới 2 tuổi ngồi cùng người lớn, không cần ghế.` : ""}
 
                                           </Text>
 
-                                          {loadingSuggestions && <Text size="sm">Đang tìm chuyến gần giờ hoặc ngày liền kề…</Text>}
+                                          {loadingSuggestions && <Text>Đang tìm chuyến gần giờ hoặc ngày liền kề…</Text>}
 
-                                          {suggestionError && <Text size="sm">{suggestionError}</Text>}
+                                          {suggestionError && <Text>{suggestionError}</Text>}
 
                                           {!loadingSuggestions && !suggestionError && suggestedFlights.length === 0 && (
-                                            <Text size="sm">Không tìm thấy chuyến liền kề còn đủ ghế. Hãy đổi ngày hoặc giảm số hành khách.</Text>
+                                            <Text>Không tìm thấy chuyến liền kề còn đủ ghế. Hãy đổi ngày hoặc giảm số hành khách.</Text>
                                           )}
 
                                           {suggestedFlights.map(candidate => (
@@ -1631,102 +1720,348 @@ function BookingPageContent()
                           <Divider my="xs" variant="dashed" />
 
                           {selectedBookingFlights.map((summaryFlight, legIndex) => summaryFlight && (
-                            <Paper key={summaryFlight.flightId} p="sm" withBorder bg="var(--mantine-color-teal-0)" mb="sm">
-                              <Paper className="booking-flight-summary" p="md" radius="lg" withBorder>
-                                <Group gap="md" align="center" wrap="nowrap">
-                                  <ThemeIcon size={42} radius="md" color="blue" variant="light" style={{ flexShrink: 0 }}>
-                                    <IconPlane size={23} />
-                                  </ThemeIcon>
-                                  <Stack gap={3} style={{ flex: 1, minWidth: 0 }}>
-                                    <Group justify="space-between">
-                                      <Stack gap={0}>
-                                        <Text fw={600} className="ticket-ref__brand" title={summaryFlight.airlineName}>
-                                          {legIndex === 0 ? "Chuyến đi" : "Chuyến về"} · {summaryFlight.airlineName}
-                                        </Text>
-                                        <Text fw={500}>{summaryFlight.flightNo}</Text>
-                                      </Stack>
-                                      <Text fw={500}>{summaryFlight.origin} → {summaryFlight.destination}</Text>
-                                    </Group>
-                                    <Text c="dimmed" size="sm" lineClamp={2}>
-                                      {summaryFlight.originCity} → {summaryFlight.destinationCity} · {dateFormat(summaryFlight.departureTime, "dd/MM/yyyy")}
-                                    </Text>
-                                  </Stack>
-                                </Group>
+                            <React.Fragment key={`booking-${legIndex}`}>
+                              <Title order={2} size="lg" id="seat-passenger-title" my="xs">Thông tin đặt vé</Title>
+                              <Paper key={summaryFlight.flightId} p="sm" withBorder bg="var(--mantine-color-teal-0)" mb="sm">
+                                <Paper className="booking-flight-summary" p="md" radius="lg" withBorder>
+                                  <Group gap="md" align="center" wrap="nowrap">
+                                    <ThemeIcon size={42} radius="md" color="blue" variant="light" style={{ flexShrink: 0 }}>
+                                      <IconPlane size={23} />
+                                    </ThemeIcon>
+                                    <Stack gap={3} style={{ flex: 1, minWidth: 0 }}>
+                                      <Group justify="space-between">
+                                        <Stack gap={0}>
+                                          <Text fw={600} className="ticket-ref__brand" title={summaryFlight.airlineName}>
+                                            {legIndex === 0 ? "Chuyến đi" : "Chuyến về"} · {summaryFlight.airlineName}
+                                          </Text>
+                                          <Text fw={500}>{summaryFlight.flightNo}</Text>
+                                        </Stack>
+                                        <Text fw={500}>{summaryFlight.origin} → {summaryFlight.destination}</Text>
+                                      </Group>
+                                      <Text c="dimmed" size="sm" lineClamp={2}>
+                                        {summaryFlight.originCity} → {summaryFlight.destinationCity} · {dateFormat(summaryFlight.departureTime, "dd/MM/yyyy")}
+                                      </Text>
+                                    </Stack>
+                                  </Group>
+                                </Paper>
                               </Paper>
-                              {passengers.map((passenger, index) =>
-                              {
-                                const seatId = passenger.seatIds[legIndex];
-                                const seatNo = seatsByLeg[legIndex].find(seat => seat.seatId === seatId)?.seatNo;
-                                return (
-                                  <Text key={`${summaryFlight.flightId}-${index}`} size="sm" mt="xs">
-                                    {passenger.passengerName || `Hành khách ${index + 1}`} · Ghế {seatNo ?? "Chưa chọn"}
-                                  </Text>
-                                );
-                              })}
-                            </Paper>
+                            </React.Fragment>
                           ))}
-                          {confirmationPassengers.length > 0 && (
-                            <Paper withBorder radius="md" p="sm" mt="sm">
-                              <Title order={3} size="md">Xác nhận hành trình và chi phí</Title>
-                              <Text size="sm" c="dimmed" mt={4}>Kiểm tra từng chặng trước khi gửi yêu cầu đặt vé.</Text>
-                              <Stack gap="xs" mt="sm">
-                                {confirmationPassengers.map(({ passenger, index, legs, total }) => (
-                                  <Paper key={`review-${index}`} withBorder radius="md" p="sm">
-                                    <Text fw={700}>
-                                      {passenger.passengerName} · {passenger.passengerType === "CHILD" ? "Trẻ em" : "Người lớn"}
-                                    </Text>
-                                    {legs.map((leg, legIndex) => (
-                                      <Stack key={`${index}-${leg.flight.flightId}`} gap={4} mt="xs">
-                                        <Text fw={600} size="sm">
-                                          {legIndex === 0 ? "Chuyến đi" : "Chuyến về"} · {leg.flight.flightNo} · Ghế {leg.seat.seatNo}
+
+                          {confirmationPassengers.map(({ passenger, index, legs, total }) =>
+                          {
+                            const isChild = passenger.passengerType === "CHILD";
+
+                            const formatMoney = (amount: number, currency = "VND") =>
+                              `${numberToCurrency(amount, currency, false)} ${currency}`;
+
+                            const moneyRow = (
+                              label: string,
+                              amount: number,
+                              currency: string,
+                              type: "fare" | "surcharge" | "service" = "service"
+                            ) =>
+                            {
+                              const color =
+                                type === "fare"
+                                  ? "var(--mantine-color-blue-7)"
+                                  : type === "surcharge"
+                                    ? "var(--mantine-color-orange-7)"
+                                    : "var(--mantine-color-text)";
+
+                              return (
+                                <Group
+                                  key={label}
+                                  gap="md"
+                                  wrap="nowrap"
+                                  align="flex-start"
+                                >
+                                  <Text
+                                    size="sm"
+                                    c="dimmed"
+                                    style={{ flex: 1, minWidth: 0 }}
+                                  >
+                                    {label}
+                                  </Text>
+
+                                  <Text
+                                    size="sm"
+                                    fw={type === "fare" ? 700 : 600}
+                                    c={color}
+                                    ta="right"
+                                    style={{
+                                      whiteSpace: "nowrap",
+                                      fontVariantNumeric: "tabular-nums",
+                                    }}
+                                  >
+                                    {type !== "fare" && amount > 0 ? "+ " : ""}
+                                    {formatMoney(amount, currency)}
+                                  </Text>
+                                </Group>
+                              );
+                            };
+
+                            return (
+                              <Paper
+                                key={`review-${index}`}
+                                withBorder
+                                radius="lg"
+                                p={{ base: "md", sm: "lg" }}
+                              >
+                                <Stack gap="md">
+                                  {/* THÔNG TIN HÀNH KHÁCH */}
+                                  <Group gap="sm" wrap="nowrap">
+                                    <ThemeIcon
+                                      size={42}
+                                      radius="md"
+                                      color="gray"
+                                      variant="light"
+                                    >
+                                      <IconUser size={22} />
+                                    </ThemeIcon>
+
+                                    <Box style={{ flex: 1, minWidth: 0 }}>
+                                      <Text fw={700} fz="md">
+                                        {passenger.passengerName}
+                                      </Text>
+                                      <Text c="dimmed" size="sm">
+                                        {isChild ? "Trẻ em" : "Người lớn"}
+                                        {" · "}
+                                        Hành khách {index + 1}
+                                      </Text>
+                                    </Box>
+
+                                    <Badge variant="light" color="gray" size="md">
+                                      {legs.length} chuyến
+                                    </Badge>
+                                  </Group>
+
+                                  {/* CHI TIẾT THEO TỪNG CHUYẾN */}
+                                  {legs.map((leg, legIndex) =>
+                                  {
+                                    const currency = leg.flight.currency;
+
+                                    const extraFees =
+                                      leg.cabinFee +
+                                      leg.seatFee +
+                                      leg.baggageFee +
+                                      leg.mealFee;
+
+                                    const legTotal = leg.fare + extraFees;
+
+                                    return (
+                                      <Paper
+                                        key={`${index}-${leg.flight.flightId}`}
+                                        withBorder
+                                        radius="md"
+                                        p="md"
+                                        bg="var(--mantine-color-default-hover)"
+                                      >
+                                        <Stack gap="md">
+                                          {/* HEADER CHUYẾN BAY */}
+                                          <Group gap="sm" align="center">
+                                            <ThemeIcon
+                                              size={36}
+                                              radius="md"
+                                              variant="light"
+                                              color="gray"
+                                            >
+                                              {legIndex === 0 ? (
+                                                <IconPlaneDeparture size={19} />
+                                              ) : (
+                                                <IconPlaneArrival size={19} />
+                                              )}
+                                            </ThemeIcon>
+
+                                            <Box style={{ flex: 1, minWidth: 0 }}>
+                                              <Text fw={700} fz="sm">
+                                                {legIndex === 0
+                                                  ? "Chuyến đi"
+                                                  : "Chuyến về"}
+                                                {" · "}
+                                                {leg.flight.flightNo}
+                                              </Text>
+
+                                              <Text size="sm" c="dimmed">
+                                                {leg.flight.origin}
+                                                {" → "}
+                                                {leg.flight.destination}
+                                                {" · "}
+                                                Ghế {leg.seat.seatNo}
+                                              </Text>
+                                            </Box>
+
+                                            <Badge
+                                              variant="outline"
+                                              color="gray"
+                                              size="sm"
+                                            >
+                                              {cabinLabels[leg.seat.cabinClass] ??
+                                                leg.seat.cabinClass}
+                                            </Badge>
+                                          </Group>
+
+                                          <Divider color="gray.3" />
+
+                                          {/* GIÁ VÉ CƠ BẢN */}
+                                          <Stack gap="xs">
+                                            <Group gap="xs">
+                                              <IconTicket size={17} color="#3979b5" />
+                                              <Text fw={700} size="sm">
+                                                Giá vé
+                                              </Text>
+                                            </Group>
+
+                                            {moneyRow(
+                                              "Giá vé cơ bản",
+                                              leg.fare,
+                                              currency,
+                                              "fare"
+                                            )}
+                                          </Stack>
+
+                                          {/* PHỤ THU */}
+                                          {(leg.cabinFee > 0 || leg.seatFee > 0) && (
+                                            <>
+                                              <Divider color="gray.2" />
+
+                                              <Stack gap="xs">
+                                                <Group gap="xs">
+                                                  <IconArmchair size={17} color="#c77d30" />
+                                                  <Text fw={700} size="sm">
+                                                    Phụ thu ghế
+                                                  </Text>
+                                                </Group>
+
+                                                {leg.cabinFee > 0 &&
+                                                  moneyRow(
+                                                    `Hạng ${cabinLabels[
+                                                    leg.seat.cabinClass
+                                                    ] ?? leg.seat.cabinClass
+                                                    }`,
+                                                    leg.cabinFee,
+                                                    currency,
+                                                    "surcharge"
+                                                  )}
+
+                                                {leg.seatFee > 0 &&
+                                                  moneyRow(
+                                                    `Vị trí ghế ${leg.seat.seatNo}`,
+                                                    leg.seatFee,
+                                                    currency,
+                                                    "surcharge"
+                                                  )}
+                                              </Stack>
+                                            </>
+                                          )}
+
+                                          {/* DỊCH VỤ ĐI KÈM */}
+                                          <Divider color="gray.2" />
+
+                                          <Stack gap="xs">
+                                            <Group gap="xs">
+                                              <IconBriefcase size={17} />
+                                              <Text fw={700} size="sm">
+                                                Dịch vụ đi kèm
+                                              </Text>
+                                            </Group>
+
+                                            {moneyRow(
+                                              leg.baggageKg
+                                                ? `Hành lý ký gửi · ${leg.baggageKg} kg`
+                                                : "Hành lý · Không mua",
+                                              leg.baggageFee,
+                                              currency
+                                            )}
+
+                                            {moneyRow(
+                                              leg.mealCode
+                                                ? `Suất ăn · ${mealLabels[leg.mealCode] ??
+                                                leg.mealCode
+                                                }`
+                                                : "Suất ăn · Không chọn",
+                                              leg.mealFee,
+                                              currency
+                                            )}
+                                          </Stack>
+
+                                          {/* TẠM TÍNH CHUYẾN BAY */}
+                                          <Paper
+                                            radius="md"
+                                            p="sm"
+                                            bg="var(--mantine-color-body)"
+                                            withBorder
+                                          >
+                                            <Group gap="md" wrap="nowrap">
+                                              <Text
+                                                fw={600}
+                                                size="sm"
+                                                style={{ flex: 1 }}
+                                              >
+                                                Tạm tính chuyến bay
+                                              </Text>
+
+                                              <Text
+                                                fw={750}
+                                                fz="md"
+                                                style={{
+                                                  whiteSpace: "nowrap",
+                                                  fontVariantNumeric: "tabular-nums",
+                                                }}
+                                              >
+                                                {formatMoney(legTotal, currency)}
+                                              </Text>
+                                            </Group>
+                                          </Paper>
+                                        </Stack>
+                                      </Paper>
+                                    );
+                                  })}
+
+                                  {/* TỔNG TIỀN HÀNH KHÁCH */}
+                                  <Paper
+                                    radius="md"
+                                    p="md"
+                                    style={{
+                                      background: "rgba(48, 120, 189, 0.07)",
+                                      border: "1px solid rgba(48, 120, 189, 0.16)",
+                                    }}
+                                  >
+                                    <Group
+                                      gap="md"
+                                      align="center"
+                                      wrap="wrap"
+                                    >
+                                      <Box style={{ flex: 1, minWidth: 150 }}>
+                                        <Text fw={700} fz="sm">
+                                          Tổng tiền hành khách {index + 1}
                                         </Text>
-                                        <Group justify="space-between" gap="xs">
-                                          <Text size="sm">Giá vé</Text>
-                                          <Text size="sm">{money(leg.fare)} {leg.flight.currency}</Text>
-                                        </Group>
-                                        <Group justify="space-between" gap="xs">
-                                          <Text size="sm">Phụ thu hạng {cabinLabels[leg.seat.cabinClass] ?? leg.seat.cabinClass}</Text>
-                                          <Text size="sm">{money(leg.cabinFee)} {leg.flight.currency}</Text>
-                                        </Group>
-                                        <Group justify="space-between" gap="xs">
-                                          <Text size="sm">Phụ thu ghế {leg.seat.seatNo}</Text>
-                                          <Text size="sm">{money(leg.seatFee)} {leg.flight.currency}</Text>
-                                        </Group>
-                                        <Group justify="space-between" gap="xs">
-                                          <Text size="sm">Hành lý {leg.baggageKg ? `${leg.baggageKg} kg` : "(không mua)"}</Text>
-                                          <Text size="sm">{money(leg.baggageFee)} {leg.flight.currency}</Text>
-                                        </Group>
-                                        <Group justify="space-between" gap="xs">
-                                          <Text size="sm">Suất ăn {leg.mealCode ? mealLabels[leg.mealCode] ?? leg.mealCode : "(không chọn)"}</Text>
-                                          <Text size="sm">{money(leg.mealFee)} {leg.flight.currency}</Text>
-                                        </Group>
-                                      </Stack>
-                                    ))}
-                                    <Divider my="xs" />
-                                    <Group justify="space-between">
-                                      <Text fw={700}>Tổng hành khách {index + 1}</Text>
-                                      <Text fw={700}>{money(total)} {selectedBookingFlights[0]?.currency}</Text>
+
+                                        <Text c="dimmed" fz="sm">
+                                          Đã bao gồm vé và dịch vụ
+                                        </Text>
+                                      </Box>
+
+                                      <Text
+                                        fz="xl"
+                                        fw={800}
+                                        c="var(--mantine-color-blue-8)"
+                                        style={{
+                                          whiteSpace: "nowrap",
+                                          fontVariantNumeric: "tabular-nums",
+                                        }}
+                                      >
+                                        {formatMoney(
+                                          total,
+                                          selectedBookingFlights[0]?.currency ?? "VND"
+                                        )}
+                                      </Text>
                                     </Group>
                                   </Paper>
-                                ))}
-                              </Stack>
-                              <Divider my="sm" />
-                              <Group justify="space-between">
-                                <Text fw={700}>Tổng cộng</Text>
-                                <Text fw={800} size="lg" c="blue.7">{money(confirmationTotal)} {selectedBookingFlights[0]?.currency}</Text>
-                              </Group>
-                              <Group justify="flex-end" mt="sm">
-                                <Button
-                                  color="blue"
-                                  loading={submitting}
-                                  disabled={confirmationPassengers.length !== passengers.filter(passenger => passenger.booking === null).length}
-                                  onClick={() => void handleSubmit()}
-                                >
-                                  Xác nhận đặt vé
-                                </Button>
-                              </Group>
-                            </Paper>
-                          )}
+                                </Stack>
+                              </Paper>
+                            );
+                          })}
 
                           <Paper>
                             {allPassengersBooked && (
@@ -1745,7 +2080,7 @@ function BookingPageContent()
                                     </Badge>
                                   )}
                                   {infantCount > 0 && (
-                                    <Text size="sm" c="dimmed" ta="center">
+                                    <Text c="dimmed" ta="center">
                                       Còn {infantCount} trẻ dưới 2 tuổi đi cùng người lớn · không cần ghế, miễn phí.
                                     </Text>
                                   )}
@@ -1774,7 +2109,7 @@ function BookingPageContent()
                                           </Badge>
                                         </Group>
                                         <Group justify="space-between" align="center" wrap="wrap">
-                                          <Text size="sm" c="dimmed">Mã vé · {ticket.bookingCode}</Text>
+                                          <Text c="dimmed">Mã vé · {ticket.bookingCode}</Text>
                                           <Text fw={700} c="blue.7" size="lg">{money(ticket.amount)}</Text>
                                         </Group>
                                         <Group justify="space-between" align="center" wrap="wrap">

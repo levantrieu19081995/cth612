@@ -98,7 +98,7 @@ const SectionThongTinKhachHang = (props: SectionThongTinKhachHangProps) =>
                                 })),
                             ];
                             return (
-                                <>
+                                <React.Fragment key={`thong-tin-${index}`}>
 
                                     <Paper withBorder radius="lg" p="lg">
                                         <Stack gap="md">
@@ -333,7 +333,7 @@ const SectionThongTinKhachHang = (props: SectionThongTinKhachHangProps) =>
                                             </Paper>
                                         )}
 
-                                </>
+                                </React.Fragment>
                             );
                         })}
                     </Stack>
