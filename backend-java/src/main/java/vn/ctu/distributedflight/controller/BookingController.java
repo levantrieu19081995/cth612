@@ -60,7 +60,7 @@ public class BookingController {
         Trả về một groupCode dùng chung cho cả đoàn và cả hai chiều; mỗi vé vẫn có bookingCode riêng.
         flightIds: 1 chuyến = một chiều; 2 chuyến [đi, về] = khứ hồi. Chuyến về phải đi ngược chặng đi và khởi hành sau khi chuyến đi đến nơi.
         passengers: 1 đến 9 người, cần ít nhất 1 người lớn. seatIds của mỗi người có đúng một ghế cho mỗi chuyến, theo thứ tự flightIds.
-        baggageKg và mealCode áp dụng cho từng chặng. infantName chỉ cho ADULT, tối đa 1 em bé mỗi người lớn; em bé ngồi cùng, không chiếm ghế, miễn phí.
+        baggageKgs và mealCodes là mảng, mỗi chặng một phần tử cùng thứ tự flightIds (null = không mua; bỏ cả mảng = không mua gì). infantName chỉ cho ADULT, tối đa 1 em bé mỗi người lớn; em bé ngồi cùng, không chiếm ghế, miễn phí.
         Giá mỗi vé tính như POST /api/bookings; payment.amount phải bằng tổng của tất cả vé do server tính.
         requestId bắt buộc: gửi lại cùng requestId trả về đúng đoàn cũ; khác nội dung → 409 IDEMPOTENCY_KEY_REUSED.
         Lỗi: SEAT_ALREADY_BOOKED, INVALID_PAYMENT, INVALID_TRIP, INVALID_INFANT, INVALID_SEATS, DUPLICATE_SEAT, ADULT_REQUIRED.""")

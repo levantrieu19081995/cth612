@@ -89,4 +89,17 @@ class BookingGroupServiceTest {
         assertEquals("DUPLICATE_SEAT",assertThrows(ApiException.class,()->
             service.createGroup(request("3000000",List.of(out),person("ADULT",null,s1),person("ADULT",null,s1)))).code());
     }
+    @Test void baggageMealAndSeatFeesAreCountedPerLeg() {
+        when(repository.lockSeat(out,s1)).thenReturn(Optional.of(new Seat(s1,"03A","ECONOMY","AVAILABLE")));
+        TripPassenger adult=new TripPassenger("Passenger","ADULT",List.of(15),List.of("SANDWICH"),null,List.of(s1));
+        // 1.500.000 fare + 150.000 baggage + 60.000 sandwich + 50.000 window/aisle seat
+        service.createGroup(new CreateBookingGroup(List.of(out),"c@example.com",List.of(adult),
+            new Payment(new BigDecimal("1760000"),"VND"),UUID.randomUUID()));
+        verify(repository).insertGroup(any(),anyString(),eq("ONE_WAY"),any(),eq(new BigDecimal("1760000.00")),anyString(),any());
+    }
+    @Test void ancillaryListsMustHaveOneEntryPerLeg() {
+        TripPassenger adult=new TripPassenger("Passenger","ADULT",List.of(15,20),null,null,List.of(s1));
+        assertEquals("INVALID_ANCILLARY",assertThrows(ApiException.class,()->service.createGroup(new CreateBookingGroup(
+            List.of(out),"c@example.com",List.of(adult),new Payment(new BigDecimal("1500000"),"VND"),UUID.randomUUID()))).code());
+    }
 }

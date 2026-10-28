@@ -297,9 +297,13 @@ public class BookingService {
             throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_TRIP","Chuyến đi và chuyến về phải khác nhau.");
         Set<UUID> seats=new HashSet<>();
         for(TripPassenger p:request.passengers()) {
+            if((p.baggageKgs()!=null&&p.baggageKgs().size()!=legs)||(p.mealCodes()!=null&&p.mealCodes().size()!=legs))
+                throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_ANCILLARY","baggageKgs và mealCodes (nếu gửi) phải có đúng "+legs+" phần tử, mỗi chặng một giá trị (null = không mua).");
             try {
-                BookingPolicy.baggagePrice(p.baggageKg());
-                BookingPolicy.mealPrice(p.mealCode());
+                for(int leg=0;leg<legs;leg++) {
+                    BookingPolicy.baggagePrice(p.baggageFor(leg));
+                    BookingPolicy.mealPrice(p.mealFor(leg));
+                }
             } catch(IllegalArgumentException ex) { throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_ANCILLARY",ex.getMessage()); }
             if(p.seatIds().size()!=legs)
                 throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_SEATS","Mỗi hành khách phải chọn đúng "+legs+" ghế (mỗi chặng một ghế).");
@@ -353,7 +357,7 @@ public class BookingService {
             Seat seat=seats.get(pick);
             try {
                 fees.put(pick,BookingPolicy.seatPrice(seat.seatNo()));
-                BigDecimal price=BookingPolicy.totalPrice(p.baggageKg(),p.mealCode(),seat.seatNo(),seat.cabinClass(),p.passengerType());
+                BigDecimal price=BookingPolicy.totalPrice(p.baggageFor(pick.leg()),p.mealFor(pick.leg()),seat.seatNo(),seat.cabinClass(),p.passengerType());
                 prices.put(pick,price); total=total.add(price);
             } catch(IllegalArgumentException ex) { throw new ApiException(HttpStatus.BAD_REQUEST,"INVALID_ANCILLARY",ex.getMessage()); }
         }
@@ -381,8 +385,8 @@ public class BookingService {
             payload.put("groupCode",groupCode);
             payload.put("tripType",legs==2?"ROUND_TRIP":"ONE_WAY");
             payload.put("legNo",pick.leg()+1);
-            payload.put("baggageKg",p.baggageKg());
-            payload.put("mealCode",p.mealCode());
+            payload.put("baggageKg",p.baggageFor(pick.leg()));
+            payload.put("mealCode",p.mealFor(pick.leg()));
             payload.put("seatFee",fees.get(pick));
             payload.put("passengerType",p.passengerType());
             payload.put("infantName",p.infantName());

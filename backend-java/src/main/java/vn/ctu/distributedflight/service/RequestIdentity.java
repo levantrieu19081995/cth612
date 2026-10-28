@@ -38,7 +38,7 @@ public final class RequestIdentity {
             parts.add(request.payment().currency());
             for(TripPassenger passenger:request.passengers()) {
                 parts.add(Arrays.asList(passenger.passengerName().trim(),passenger.passengerType(),
-                    Objects.toString(passenger.baggageKg(),""),Objects.toString(passenger.mealCode(),""),
+                    Objects.toString(passenger.baggageKgs(),""),Objects.toString(passenger.mealCodes(),""),
                     Objects.toString(passenger.infantName(),""),passenger.seatIds().stream().map(UUID::toString).toList()));
             }
             byte[] bytes=JsonMapper.builder().build().writeValueAsBytes(parts);

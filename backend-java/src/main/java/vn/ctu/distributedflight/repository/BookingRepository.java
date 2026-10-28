@@ -180,7 +180,7 @@ public class BookingRepository {
                 baggage_kg,meal_code,seat_fee,passenger_type,group_id,leg_no,passenger_no,infant_name)
             VALUES (?,?,?,?,?,?,'CONFIRMED',?,?,?,?,?,?,?,?,?)
             """,id,code,flightId,seatId,passenger.passengerName().trim(),email.trim(),Timestamp.from(time),
-            passenger.baggageKg(),passenger.mealCode(),seatFee,passenger.passengerType(),groupId,legNo,passengerNo,
+            passenger.baggageFor(legNo-1),passenger.mealFor(legNo-1),seatFee,passenger.passengerType(),groupId,legNo,passengerNo,
             passenger.infantName()==null?null:passenger.infantName().trim());
     }
     private Optional<BookingGroup> group(String where,Object arg) {

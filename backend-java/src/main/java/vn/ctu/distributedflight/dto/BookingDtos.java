@@ -48,13 +48,15 @@ public final class BookingDtos {
             @NotNull @Size(min=1, max=9) List<@NotNull @Valid GroupPassenger> passengers) {}
     public record TripPassenger(@NotBlank @Size(max=120) String passengerName,
             @Pattern(regexp="ADULT|CHILD") String passengerType,
-            @Min(15) @Max(25) Integer baggageKg, @Pattern(regexp="CHICKEN|VEGETARIAN|SANDWICH") String mealCode,
+            List<@Min(15) @Max(25) Integer> baggageKgs, List<@Pattern(regexp="CHICKEN|VEGETARIAN|SANDWICH") String> mealCodes,
             @Size(max=120) String infantName,
             @NotNull @Size(min=1, max=2) List<@NotNull UUID> seatIds) {
         public TripPassenger {
             if (passengerType == null) passengerType = "ADULT";
             if (infantName != null && infantName.isBlank()) infantName = null;
         }
+        public Integer baggageFor(int leg) { return baggageKgs == null || leg >= baggageKgs.size() ? null : baggageKgs.get(leg); }
+        public String mealFor(int leg) { return mealCodes == null || leg >= mealCodes.size() ? null : mealCodes.get(leg); }
     }
     public record CreateBookingGroup(@NotNull @Size(min=1, max=2) List<@NotNull UUID> flightIds,
             @NotBlank @Email @Size(max=254) String contactEmail,
