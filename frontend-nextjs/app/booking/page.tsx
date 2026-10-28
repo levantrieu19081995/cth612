@@ -51,10 +51,8 @@ import
   IconX,
   IconPlaneArrival,
   IconExchange,
-  IconArrowsExchange2,
-  IconArrowDown,
-} from "@tabler/icons-react";
-
+  IconArrowsExchange2, 
+  IconArrowDown, IconUser, IconBriefcase } from "@tabler/icons-react";
 import { DateInput, MonthPickerInput } from '@mantine/dates';
 import 'dayjs/locale/vi';
 
@@ -1688,7 +1686,7 @@ function BookingPageContent()
                               <InfoRow label="Số lượng vé"
                                 last
                                 labelProps={{
-                                  color: "dark"
+                                  c: "dark"
                                 }}
                                 value={
                                   <Stack>
@@ -1753,7 +1751,7 @@ function BookingPageContent()
                             const isChild = passenger.passengerType === "CHILD";
 
                             const formatMoney = (amount: number, currency = "VND") =>
-                              `${numberToCurrency(amount, currency, false)} ${currency}`;
+                              `${numberToCurrency(amount, currency as Parameters<typeof numberToCurrency>[1], false)} ${currency}`;
 
                             const moneyRow = (
                               label: string,

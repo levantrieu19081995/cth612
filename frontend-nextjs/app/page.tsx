@@ -63,7 +63,7 @@ export default function HomePage()
 
   return (
     <Box component="section" className="overview-page">
-      <Stack gap={{ base: "xl", md: 48 }}>
+      <Stack gap="xl">
         <Paper className="overview-hero" radius="xl" p={{ base: "lg", md: 40 }}>
           <Stack gap="xl">
             <Group align="flex-start" justify="space-between" gap="xl" wrap="wrap">

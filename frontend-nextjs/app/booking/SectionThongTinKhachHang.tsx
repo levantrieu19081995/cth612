@@ -1,3 +1,4 @@
+import React from "react";
 import { Flight, FlightBookingRequest, Seat } from "@/types/booking";
 import { Alert, Badge, Box, Divider, Group, NumberInput, Paper, Select, SimpleGrid, Stack, Text, TextInput, ThemeIcon, Title } from "@mantine/core";
 import { PassengerDraft } from "./page";
