@@ -1751,7 +1751,7 @@ function BookingPageContent()
                             const isChild = passenger.passengerType === "CHILD";
 
                             const formatMoney = (amount: number, currency = "VND") =>
-                              `${numberToCurrency(amount, currency as Parameters<typeof numberToCurrency>[1], false)} ${currency}`;
+                              `${numberToCurrency(amount, currency as Parameters<typeof numberToCurrency>[1], "none")} ${currency}`;
 
                             const moneyRow = (
                               label: string,
