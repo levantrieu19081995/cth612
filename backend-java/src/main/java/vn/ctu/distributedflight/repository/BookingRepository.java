@@ -136,8 +136,9 @@ public class BookingRepository {
     }
     private List<Booking> tickets(String where,Object... args) {
         return jdbc.query("""
-            SELECT b.*,f.flight_no,s.seat_no,s.cabin_class,p.amount,p.currency,g.group_code FROM bookings b
-            JOIN flights f ON b.flight_id=f.id LEFT JOIN flight_seats s ON b.seat_id=s.id
+            SELECT b.*,f.flight_no,f.departure_time,f.arrival_time,oa.code origin,da.code destination,s.seat_no,s.cabin_class,p.amount,p.currency,g.group_code FROM bookings b
+            JOIN flights f ON b.flight_id=f.id JOIN airports oa ON oa.id=f.origin_airport_id JOIN airports da ON da.id=f.destination_airport_id
+            LEFT JOIN flight_seats s ON b.seat_id=s.id
             JOIN payments p ON p.booking_id=b.id LEFT JOIN booking_groups g ON g.id=b.group_id
             """+where,(rs,n)->{
                 String cabinClass=rs.getString("cabin_class");
@@ -148,7 +149,8 @@ public class BookingRepository {
                     nullableInteger(rs,"baggage_kg"),rs.getString("meal_code"),rs.getBigDecimal("seat_fee"),
                     rs.getString("passenger_type"),cabinClass,cabinClass==null?BigDecimal.ZERO:BookingPolicy.cabinPrice(cabinClass),
                     rs.getString("group_code"),nullableInteger(rs,"leg_no"),rs.getString("infant_name"),
-                    rs.getObject("group_request_id",UUID.class));
+                    rs.getObject("group_request_id",UUID.class),rs.getString("origin"),rs.getString("destination"),
+                    rs.getTimestamp("departure_time").toInstant(),rs.getTimestamp("arrival_time").toInstant());
             },args);
     }
     public List<Booking> bookingsForGroup(UUID requestId) {
