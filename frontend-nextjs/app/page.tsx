@@ -61,6 +61,7 @@ export default function HomePage()
   const [offlineNode, setOfflineNode] = useState<number | null>(null);
   const remainingCopies = offlineNode === null ? 3 : 2;
 
+
   return (
     <Box component="section" className="overview-page">
       <Stack gap="xl">
