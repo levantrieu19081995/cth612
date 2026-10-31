@@ -414,8 +414,7 @@ export const MOCK_SEATS: Seat[] = [
 ];
 
 
-export interface Flight
-{
+export interface Flight {
   flightId: string;
   flightNo: string;
   origin: string;
@@ -452,8 +451,7 @@ export type PassengerType =
   | "CHILD"
   | "INFANT";
 
-export interface FlightCabin
-{
+export interface FlightCabin {
   cabinClass: CabinClass;
   totalSeats: number;
   availableSeats: number;
@@ -462,54 +460,62 @@ export interface FlightCabin
   childFare: number;
 }
 
-export interface FlightPassengerFare
-{
+export interface FlightPassengerFare {
   passengerType: PassengerType;
   baseFare: number;
   requiresSeat: boolean;
   bookable: boolean;
 }
 
-export interface FlightAncillaries
-{
+export interface FlightAncillaries {
   baggage: FlightBaggage[];
   meals: FlightMeal[];
   seatFees: FlightSeatFee[];
 }
 
-export interface FlightBaggage
-{
+export interface FlightBaggage {
   kg: number;
   price: number;
 }
 
-export interface FlightMeal
-{
+export interface FlightMeal {
   code: string;
   price: number;
 }
 
-export interface FlightSeatFee
-{
+export interface FlightSeatFee {
   rule: string;
   price: number;
 }
 
-export interface Seat
-{
+export interface Seat {
   seatId: string; seatNo: string; cabinClass: string; status: string;
 }
-export interface Booking
-{
-  bookingId: string; bookingCode: string; flightId: string; flightNo: string;
-  seatId: string | null; seatNo: string | null; passengerName: string; passengerEmail: string;
-  status: string; createdAt: string; amount: number; currency: string;
-  baggageKg: number | null; mealCode: string | null; seatFee: number;
-  passengerType: "ADULT" | "CHILD"; cabinClass: string; cabinFee: number;
-  groupCode?: string | null; legNo?: number | null;
+export interface Booking {
+  bookingId: string;
+  bookingCode: string;
+  flightId: string;
+  flightNo: string;
+  seatId: string | null;
+  seatNo: string | null;
+  passengerName: string;
+  passengerEmail: string;
+  status: string;
+  createdAt: string;
+  amount: number;
+  currency: string;
+  baggageKg: number | null;
+  mealCode: string | null;
+  seatFee: number;
+  passengerType: "ADULT" | "CHILD";
+  cabinClass: string;
+  cabinFee: number;
+  groupCode?: string | null;
+  legNo?: number | null;
+  arivalTime?: string;
+  departureTime?: string
 }
-export interface BookingGroup
-{
+export interface BookingGroup {
   groupId: string;
   groupCode: string;
   tripType: "ONE_WAY" | "ROUND_TRIP";
@@ -520,8 +526,7 @@ export interface BookingGroup
   currency: string;
   tickets: Booking[];
 }
-export interface CreateBookingGroup
-{
+export interface CreateBookingGroup {
   flightIds: string[];
   contactEmail: string;
   passengers: Array<{
@@ -535,8 +540,7 @@ export interface CreateBookingGroup
   payment: FlightBookingPayment;
   requestId: string;
 }
-export interface CreateBooking
-{
+export interface CreateBooking {
   requestId: string;
   flightId: string; seatId: string; passengerName: string; passengerEmail: string;
   baggageKg?: number | null; mealCode?: string | null;
@@ -545,8 +549,7 @@ export interface CreateBooking
 }
 
 
-export interface FlightBookingRequest
-{
+export interface FlightBookingRequest {
   flightIds: string[];
   contactEmail: string;
   passengers: FlightBookingPassenger[];
@@ -554,8 +557,7 @@ export interface FlightBookingRequest
   requestId: string;
 }
 
-export interface FlightBookingPassenger
-{
+export interface FlightBookingPassenger {
   passengerName: string;
   passengerType: "ADULT" | "CHILD";
   baggageKg: number | null;
@@ -568,8 +570,7 @@ export interface FlightBookingPassenger
   bookings?: Booking[];
 }
 
-export interface FlightBookingPayment
-{
+export interface FlightBookingPayment {
   amount: number;
   currency: string;
 }

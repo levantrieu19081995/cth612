@@ -206,7 +206,8 @@ export default function BookingDetails() {
               flightNo: ticket.flightNo,
               legNo: ticket.legNo ?? 1,
               groupCode: ticket.groupCode,
-              
+              departureTime: ticket.departureTime,
+              arivalTime: ticket.arivalTime,
               passengerName: ticket.passengerName,
               passengerType: ticket.passengerType,
               seatNo: ticket.seatNo,
