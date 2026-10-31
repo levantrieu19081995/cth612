@@ -74,6 +74,7 @@ import { flightDuration, getName, money } from "@/components/utils/func";
 import SectionThongTinKhachHang from "./SectionThongTinKhachHang";
 import SectionBookingSeat from "./SectionBookingSeat";
 import BookingLookup from "./BookingLookup";
+import BulkBookingGenerator from "./BulkBookingGenerator";
 import FlightPassengerList, { type FlightPassengerSummary } from "./FlightPassengerList";
 import { numberToCurrency } from "@/components/utils/currency";
 import { useDisclosure } from "@mantine/hooks";
@@ -966,6 +967,7 @@ function BookingPageContent()
             </Alert>
             
             <BookingLookup />
+            <BulkBookingGenerator />
             {/* TIẾN TRÌNH */}
             <Paper className="booking-stepper-card" withBorder radius="xl" p={{ base: "md", sm: "lg" }} shadow="xs">
               <Stepper
