@@ -2,6 +2,7 @@
 import { usePolling } from "../../lib/usePolling";
 import type { ReplicationSnapshot } from "../../types/replication";
 import type { AnalyticsSummary } from "../../types/monitoring";
+import ReplicationTopology from "./ReplicationTopology";
 import { Alert, Anchor, Badge, Box, Button, Center, Code, Divider, Group, List, Loader, Paper, SimpleGrid, Stack, Table, Text, ThemeIcon, Title } from "@mantine/core";
 import { IconAlertCircle, IconChartBar, IconCheck, IconClock, IconDatabase, IconInfoCircle, IconNetwork, IconRefresh, IconServer, IconSitemap, IconTable, IconTicket } from "@tabler/icons-react";
 
@@ -71,6 +72,8 @@ export default function ReplicationPage() {
             </Center>
           </Paper>
         )}
+
+        <ReplicationTopology data={data} stale={!!error || !data?.observedAt || !Number.isFinite(Date.parse(data.observedAt)) || Date.now() - Date.parse(data.observedAt) > 45000} />
 
         {data && cr && cs && (
           <Stack gap="lg">

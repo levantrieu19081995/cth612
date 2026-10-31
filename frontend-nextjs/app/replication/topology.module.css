@@ -1,0 +1,16 @@
+.flow {
+  animation: flow 1.4s linear infinite;
+}
+
+.node {
+  transition: fill 250ms ease, stroke 250ms ease;
+}
+
+@keyframes flow {
+  to { stroke-dashoffset: -22; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flow { animation: none; }
+  .node { transition: none; }
+}
