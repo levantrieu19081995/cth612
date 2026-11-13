@@ -3,6 +3,7 @@ import { usePolling } from "../../lib/usePolling";
 import type { ReplicationSnapshot } from "../../types/replication";
 import type { AnalyticsSummary } from "../../types/monitoring";
 import ReplicationTopology from "./ReplicationTopology";
+import DistributionBrowser from "./DistributionBrowser";
 import { Alert, Anchor, Badge, Box, Button, Center, Code, Divider, Group, List, Loader, Paper, SimpleGrid, Stack, Table, Text, ThemeIcon, Title } from "@mantine/core";
 import { IconAlertCircle, IconChartBar, IconCheck, IconClock, IconDatabase, IconInfoCircle, IconNetwork, IconRefresh, IconServer, IconSitemap, IconTable, IconTicket } from "@tabler/icons-react";
 
@@ -93,7 +94,7 @@ export default function ReplicationPage() {
                   <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="md">
                     <Paper withBorder p="lg" radius="lg" style={{ borderTop: "3px solid var(--mantine-color-blue-5)" }}>
                       <Stack gap="xs">
-                        <Text fw={700} c="dark.6">Tổng số dòng CockroachDB</Text>
+                        <Text fw={700} c="dark.6">Số dòng các bảng CockroachDB đang theo dõi</Text>
                         <Text fw={800} fz={32} lh={1.25} c="blue.7">{number.format(totalRows)}</Text>
                         <Text size="sm" c="dimmed" style={{ overflowWrap: "anywhere" }}>
                           {cr.tables.map(t => `${t.table}: ${number.format(t.rows)}`).join(" · ")}
@@ -111,7 +112,7 @@ export default function ReplicationPage() {
                     </Paper>
                     <Paper withBorder p="lg" radius="lg" style={{ borderTop: "3px solid var(--mantine-color-violet-5)" }}>
                       <Stack gap="xs">
-                        <Text fw={700} c="dark.6">Sự kiện đã sang Cassandra</Text>
+                        <Text fw={700} c="dark.6">Sự kiện outbox đã gửi</Text>
                         <Text fw={800} fz={32} lh={1.25} c="violet.7">
                           {summary ? number.format(summary.outbox.published) : "—"}
                         </Text>
@@ -124,8 +125,8 @@ export default function ReplicationPage() {
                     </Paper>
                   </SimpleGrid>
                   <Alert color="gray" variant="light" radius="md" icon={<IconInfoCircle size={20} />}>
-                    Số dòng đếm trực tiếp bằng <Code>SELECT count(*)</Code>. Cassandra lưu mỗi sự kiện hai lần
-                    (theo vé và theo ngày), nên số dòng thực trong Cassandra gấp đôi số sự kiện.
+                    CockroachDB đếm dòng của các bảng đang theo dõi bằng <Code>SELECT count(*)</Code>.
+                    Cassandra có hai bảng tra cứu sự kiện; xem số dòng thực ở phần đếm dữ liệu bên dưới.
                   </Alert>
                 </Stack>
               </Paper>
@@ -206,7 +207,7 @@ export default function ReplicationPage() {
                           <Text fw={850} fz={36} c="violet.7" lh={1.1}>{cs.copiesPerRow ?? "—"}</Text>
                           <Text fz={23} c="dimmed" fw={650}>/ {cs.replicationFactor ?? "?"}</Text>
                         </Group>
-                        <Text c="dimmed" fz="sm" mt={4}>Bản sao mỗi dòng sự kiện (thực tế / RF)</Text>
+                        <Text c="dimmed" fz="sm" mt={4}>Bản sao theo topology (ước tính / RF)</Text>
                       </Box>
                       <Group gap="xs" wrap="wrap">
                         <Badge color="violet" variant="light" size="lg">{cs.strategy}</Badge>
@@ -366,57 +367,7 @@ export default function ReplicationPage() {
               </Paper>
             )}
 
-            {/* BOOKING SAMPLE PLACEMENT */}
-            <Paper withBorder radius="xl" p={{ base: "md", sm: "lg" }}>
-              <Stack gap="md">
-                <Group gap="sm" wrap="nowrap">
-                  <ThemeIcon color="teal" variant="light" radius="md" size={42}><IconTicket size={22} /></ThemeIcon>
-                  <Box style={{ flex: 1, minWidth: 0 }}>
-                    <Title order={2} fz="xl">5 vé mới nhất đang nằm ở đâu</Title>
-                    <Text fz="sm" c="dimmed">Đối chiếu bản ghi booking và lịch sử sự kiện</Text>
-                  </Box>
-                  <Badge color="gray" variant="light" size="lg">{data.samples.length} vé</Badge>
-                </Group>
-                {!data.samples.length ? (
-                  <Center py="xl"><Text c="dimmed">Chưa có vé hoặc CockroachDB chưa đọc được.</Text></Center>
-                ) : (
-                  <Table.ScrollContainer minWidth={760}>
-                    <Table striped highlightOnHover verticalSpacing="md" horizontalSpacing="md">
-                      <Table.Thead>
-                        <Table.Tr>
-                          <Table.Th>Mã vé</Table.Th>
-                          <Table.Th>CockroachDB (dòng booking)</Table.Th>
-                          <Table.Th>Cassandra (lịch sử sự kiện)</Table.Th>
-                        </Table.Tr>
-                      </Table.Thead>
-                      <Table.Tbody>
-                        {data.samples.map(s => (
-                          <Table.Tr key={s.bookingId}>
-                            <Table.Td>
-                              <Anchor href={`/bookings/${s.bookingId}`} fw={750} c="blue.7" underline="hover">
-                                {s.bookingCode}
-                              </Anchor>
-                            </Table.Td>
-                            <Table.Td>
-                              <Text size="sm" style={{ overflowWrap: "anywhere" }}>
-                                {s.rangeId === null
-                                  ? "—"
-                                  : `Range #${s.rangeId}: ${s.cockroachReplicas.map(id => nodeName(id) + (id === s.leaseHolder ? " (phục vụ)" : "")).join(", ")}`}
-                              </Text>
-                            </Table.Td>
-                            <Table.Td>
-                              <Text size="sm" style={{ overflowWrap: "anywhere" }}>
-                                {s.cassandraReplicas.length ? s.cassandraReplicas.join(", ") : "—"}
-                              </Text>
-                            </Table.Td>
-                          </Table.Tr>
-                        ))}
-                      </Table.Tbody>
-                    </Table>
-                  </Table.ScrollContainer>
-                )}
-              </Stack>
-            </Paper>
+            <DistributionBrowser snapshot={data} />
 
             {/* EXPLANATION */}
             <Paper radius="xl" p={{ base: "md", sm: "lg" }} withBorder bg="gray.0">

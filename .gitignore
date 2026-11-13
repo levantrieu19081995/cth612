@@ -16,6 +16,7 @@ backend-java/target/
 frontend-nextjs/node_modules/
 frontend-nextjs/.next/
 frontend-nextjs/out/
+frontend-nextjs/test-artifacts/
 *.tsbuildinfo
 
 # Env / secrets
