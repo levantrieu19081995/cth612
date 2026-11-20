@@ -1,41 +1,44 @@
-# The GitHub repo holds only the runnable sources: backend-java and frontend-nextjs.
-# Everything else in this folder (docs, guides, scripts, infra, databases) stays local.
-/*
-!/.gitignore
-!/backend-java/
-!/frontend-nextjs/
-
-# No Markdown (guides, READMEs, agent notes) in the repo.
-*.md
-
-# Java
-backend-java/target/
+# Keep coursework, sources, data, documents and evidence regardless of file type.
+# Exclude installed dependencies and reproducible build/cache files.
+**/node_modules/
+**/.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.next/
+**/target/
+**/dist/
+**/build/
+**/out/
+**/.turbo/
+**/.cache/
+**/coverage/
+**/.svn/
+**/.vercel/
+**/.yarn/cache/
+**/.pnp.*
+**/.next.zip
+*.py[cod]
 *.class
-
-# Next.js
-frontend-nextjs/node_modules/
-frontend-nextjs/.next/
-frontend-nextjs/out/
-frontend-nextjs/test-artifacts/
 *.tsbuildinfo
-
-# Env / secrets
-.env
-.env.local
-.env.*.local
-!*.example
-
-# IDE
-.idea/
-.vscode/
-*.iml
-
-# OS
+next-env.d.ts
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 .DS_Store
 Thumbs.db
+~$*
+.~lock.*#
+~WRL*.tmp
+*.inspect.ndjson
 
-# Logs
-*.log
+# Local credentials; safe example files can be versioned.
+.env
+.env.*
+!.env.example
+!.env.*.example
 
-# Archives (e.g. a zip made to send the frontend to someone)
-*.zip
+# Recreated by tests or application runs.
+frontend-nextjs/test-artifacts/
+backend-java/*.log
+frontend-nextjs/*.log
